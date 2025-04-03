@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const claudeJobsController = require('../controllers/claudeJobsController'); // Added Claude controller
 const dataController = require('../controllers/dataController');
 const jobsController = require('../controllers/jobsController');
 const statsController = require('../controllers/statsController');
+const mysqlJobsController = require('../controllers/mysqlJobsController');
 const { GeminiService } = require('@parse/geminiService');
 const { defaultLogger: logger } = require('@utils/logger');
 
@@ -74,5 +76,22 @@ router.get('/stats/urls', statsController.getUrlStats);
 router.get('/jobs', jobsController.getJobs);
 router.get('/jobs/:id', jobsController.getJobById);
 
+// Claude 채용 정보 라우트
+router.get('/recruitinfos-claude', claudeJobsController.getClaudeJobs);
+router.get('/recruitinfos-claude/filters', claudeJobsController.getClaudeJobFilters);
+router.get('/recruitinfos-claude/:id', claudeJobsController.getClaudeJobById);
+router.get('/stats/claude', claudeJobsController.getClaudeJobStats);
+
+
+// 완전한 데이터를 가진 Claude 채용공고 조회 API
+router.get('/recruitinfos-claude-complete', claudeJobsController.getCompleteClaudeJobs);
+
+// Claude 채용정보 데이터 완성도 통계 API
+router.get('/recruitinfos-claude/completion-stats', claudeJobsController.getCompletionStats);
+
+// MySQL 채용공고 API 라우트
+router.get('/mysql-jobs', mysqlJobsController.getMySqlJobs);
+router.post('/mysql-jobs', mysqlJobsController.saveJobToMySql);
+router.get('/mysql-jobs/filters', mysqlJobsController.getMySqlJobFilters)
 
 module.exports = router;

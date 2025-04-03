@@ -36,7 +36,8 @@ class GeminiService {
 
     // 현재 사용 중인 API 키
     this.apiKey = this.apiKeys.length > 0 ? this.apiKeys[this.currentKeyIndex] : null;
-    this.modelName = options.model || 'gemini-2.0-flash-lite';
+    //gemini-2.0-flash-exp
+    this.modelName ='gemini-2.0-flash-exp';
 
     // API 키 정보 로깅
     if (this.apiKeys.length > 0) {

@@ -7,10 +7,10 @@
   "scripts": {
     "crawl": "node src/crawl/baseWorkerManager",
     "test": "jest --config=test/__tests__/jest.config.cjs --detectOpenHandles",
-    "stats": "node --env-file=.env src/database/domain-url-stats ",
+    "seed": "node src/seed/seedGenerator",
     "server": "node src/server/index",
-    "visited-reset": "node src/database/reset-visits",
-    "parse": "node src/parse/parseManager"
+    "gemini-parse": "node src/parse/parseToGemini",
+    "claude-parse": "node src/parse/parseToClaude"
   },
   "_moduleAliases": {
     "@root": ".",
@@ -25,7 +25,10 @@
     "@config": "config"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@google/generative-ai": "^0.24.0",
+    "chrome-aws-lambda": "^10.1.0",
+    "cli-table3": "^0.6.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -33,7 +36,10 @@
     "module-alias": "^2.2.3",
     "mongoose": "^8.13.0",
     "morgan": "^1.10.0",
-    "puppeteer": "^24.4.0"
+    "mysql": "^2.18.1",
+    "mysql2": "^3.14.0",
+    "puppeteer": "^24.4.0",
+    "robots-parser": "^3.0.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.6.0",
