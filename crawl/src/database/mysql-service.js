@@ -43,6 +43,93 @@ class MySqlService {
       throw error;
     }
   }
+/**
+ * URL을 키로 사용하여 채용 공고 데이터를 업서트(upsert)합니다.
+ * 동일한 URL이 있으면 업데이트하고, 없으면 새로 추가합니다.
+ * @param {Object} jobData - 채용공고 데이터
+ * @returns {boolean} - 성공 여부
+ */
+async upsertJobByUrl(jobData) {
+  try {
+    if (!jobData.url) {
+      // URL이 없는 경우 그냥 삽입
+      const insertSql = `
+        INSERT INTO jobs (
+          title, company_name, job_type, experience, department,
+          description, requirements, preferred_qualifications,
+          ideal_candidate, url, posted_at, end_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const insertParams = [
+        jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
+        jobData.department, jobData.description, jobData.requirements,
+        jobData.preferred_qualifications, jobData.ideal_candidate, null,
+        jobData.posted_at, jobData.end_date, jobData.created_at || new Date(),
+        jobData.updated_at || new Date()
+      ];
+
+      await this.query(insertSql, insertParams);
+      return true;
+    }
+
+    // URL로 기존 데이터 조회
+    const checkSql = 'SELECT id FROM jobs WHERE url = ?';
+    const existingJobs = await this.query(checkSql, [jobData.url]);
+
+    if (existingJobs.length > 0) {
+      // 이미 존재하는 경우 업데이트
+      const updateSql = `
+        UPDATE jobs SET
+          title = ?,
+          company_name = ?,
+          job_type = ?,
+          experience = ?,
+          department = ?,
+          description = ?,
+          requirements = ?,
+          preferred_qualifications = ?,
+          ideal_candidate = ?,
+          posted_at = ?,
+          end_date = ?,
+          updated_at = ?
+        WHERE url = ?
+      `;
+
+      const updateParams = [
+        jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
+        jobData.department, jobData.description, jobData.requirements,
+        jobData.preferred_qualifications, jobData.ideal_candidate,
+        jobData.posted_at, jobData.end_date, new Date(), jobData.url
+      ];
+
+      await this.query(updateSql, updateParams);
+    } else {
+      // 새로운 데이터 삽입
+      const insertSql = `
+        INSERT INTO jobs (
+          title, company_name, job_type, experience, department,
+          description, requirements, preferred_qualifications,
+          ideal_candidate, url, posted_at, end_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const insertParams = [
+        jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
+        jobData.department, jobData.description, jobData.requirements,
+        jobData.preferred_qualifications, jobData.ideal_candidate, jobData.url,
+        jobData.posted_at, jobData.end_date, new Date(), new Date()
+      ];
+
+      await this.query(insertSql, insertParams);
+    }
+
+    return true;
+  } catch (error) {
+    logger.error('MySQL 업서트 오류:', error);
+    return false;
+  }
+}
 }
 
 const mysqlService = new MySqlService();

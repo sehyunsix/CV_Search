@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: mysql-goodjob
+    build: .
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: ajoucapstone
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    command: --default-authentication-plugin=mysql_native_password
+    deploy:
+      resources:
+        limits:
+          memory: 1G  # 메모리 제한을 1GB로 설정
+        reservations:
+          memory: 512M  # 최소 512MB 메모리 예약
+    # 선택적으로 CPU 제한을 추가할 수 있습니다
+    # cpus: '0.5'  # CPU 사용량을 0.5 코어로 제한
+
+volumes:
+  mysql_data:

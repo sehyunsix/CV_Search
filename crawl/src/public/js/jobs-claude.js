@@ -342,6 +342,7 @@ function displayJobs(jobs) {
 
     jobs.forEach(job => {
         // Format dates
+        job.title = company_name + job.department + job.job_type;
         const postedDate = job.posted_at ? new Date(job.posted_at).toLocaleDateString() : 'Unknown';
         const expiryDate = job.end_date ? new Date(job.end_date).toLocaleDateString() : 'Unknown';
 
@@ -713,7 +714,7 @@ async function batchSaveToMySql() {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        title: job.title,
+                        title: job.title || job.company_name+' '+job.defartment,
                         company_name: job.company_name,
                         job_type: job.job_type,
                         experience: job.experience,

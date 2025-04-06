@@ -4,6 +4,10 @@ const Schema = mongoose.Schema;
 // 채용 공고 스키마 정의
 const RecruitInfoSchema = new Schema({
   // URL을 유니크 키로 사용
+  title: {
+    type: String,
+    required: true
+  },
   url: {
     type: String,
     required: true,
