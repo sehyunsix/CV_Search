@@ -1,4 +1,5 @@
 require('module-alias/register');
+require('dotenv');
 const { VisitResult ,extractDomain } = require('@models/visitResult');
 const RecruitInfo = require('@models/recruitInfo');
 const { mongoService } = require('@database/mongodb-service');
@@ -712,7 +713,7 @@ if (require.main === module) {
 
       // 커맨드 라인 인수 파싱
       const args = process.argv.slice(2);
-      const batchSize = parseInt(args[0]) || 10000;
+      const batchSize = parseInt(args[0]) || process.env.BATCH_SIZE;
       const delay = parseInt(args[1]) || 1000;
 
       // ParseManager 인스턴스 생성
