@@ -48,8 +48,7 @@ class MySqlService {
  * 동일한 URL이 있으면 업데이트하고, 없으면 새로 추가합니다.
  * @param {Object} jobData - 채용공고 데이터
  * @returns {boolean} - 성공 여부
- */
-async upsertJobByUrl(jobData) {
+ */async upsertJobByUrl(jobData) {
   try {
     if (!jobData.url) {
       // URL이 없는 경우 그냥 삽입
@@ -57,14 +56,15 @@ async upsertJobByUrl(jobData) {
         INSERT INTO jobs (
           title, company_name, job_type, experience, department,
           description, requirements, preferred_qualifications,
-          ideal_candidate, url, posted_at, end_date, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ideal_candidate, url, raw_jobs_text, posted_at, end_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const insertParams = [
         jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
         jobData.department, jobData.description, jobData.requirements,
         jobData.preferred_qualifications, jobData.ideal_candidate, null,
+        jobData.raw_jobs_text, // raw_jobs_text 필드 추가
         jobData.posted_at, jobData.end_date, jobData.created_at || new Date(),
         jobData.updated_at || new Date()
       ];
@@ -90,6 +90,7 @@ async upsertJobByUrl(jobData) {
           requirements = ?,
           preferred_qualifications = ?,
           ideal_candidate = ?,
+          raw_jobs_text = ?,
           posted_at = ?,
           end_date = ?,
           updated_at = ?
@@ -100,6 +101,7 @@ async upsertJobByUrl(jobData) {
         jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
         jobData.department, jobData.description, jobData.requirements,
         jobData.preferred_qualifications, jobData.ideal_candidate,
+        jobData.raw_jobs_text, // raw_jobs_text 필드 추가
         jobData.posted_at, jobData.end_date, new Date(), jobData.url
       ];
 
@@ -110,14 +112,15 @@ async upsertJobByUrl(jobData) {
         INSERT INTO jobs (
           title, company_name, job_type, experience, department,
           description, requirements, preferred_qualifications,
-          ideal_candidate, url, posted_at, end_date, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ideal_candidate, url, raw_jobs_text, posted_at, end_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const insertParams = [
         jobData.title, jobData.company_name, jobData.job_type, jobData.experience,
         jobData.department, jobData.description, jobData.requirements,
         jobData.preferred_qualifications, jobData.ideal_candidate, jobData.url,
+        jobData.raw_jobs_text, // raw_jobs_text 필드 추가
         jobData.posted_at, jobData.end_date, new Date(), new Date()
       ];
 

@@ -1,8 +1,10 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const { extractAndProcessOnClicks } = require('@crawl/baseOnclick');
-const { isUrlAllowed } = require('./urlManager');
 const { defaultLogger: logger } = require('@utils/logger');
+const { isUrlAllowed, extractDomain } = require('@crawl/urlManager');
+const CONFIG = require('@config/config');
+const { executablePath } = require('puppeteer');
 
 /**
  * 페이지를 아래로 스크롤하는 함수
@@ -36,234 +38,173 @@ async function infiniteScroll(page, maxScrolls = 5) {
     previousHeight = currentHeight;
     currentHeight = await scrollToBottom(page);
     scrollCount++;
-    logger.info(`스크롤 ${scrollCount}/${maxScrolls} 수행 중... (높이: ${previousHeight} → ${currentHeight})`);
+    logger.debug(`스크롤 ${scrollCount}/${maxScrolls} 수행 중... (높이: ${previousHeight} → ${currentHeight})`);
   }
   return scrollCount;
 }
 
 
 /**
- * 웹페이지에서 스크립트를 추출하고 실행하는 함수
- * @param {string} url 분석할 URL
- * @param {string[] } allowedDomains 필터링할 도메인
- * @param {Browser} browser 기존 브라우저 인스턴스
- * @returns {Promise<Object>} 실행 결과 및 발견된 URL들
+ * 자바스크립트를 추출하고 실행하여 URL 추출
+ * @param {string} url - 대상 URL
+ * @param {Array<string>} allowedDomains - 허용된 도메인 목록
+ * @param {Browser} browser - 브라우저 인스턴스
+ * @returns {Promise<Array<string>>} 추출된 URL 목록
  */
-async function extractAndExecuteScripts(url,allowedDomains ,browser = null) {
-  // 결과 객체
-  const result = {
-    url,
-    scripts: {
-      extracted: 0,
-      executed: 0,
-      successful: 0,
-      failed: 0
-    },
-    onclicks: {
-      extracted: 0,
-      executed: 0,
-      successful: 0,
-      failed: 0
-    },
-    newUrls: 0,
-    error: null
-  };
-
-  // 발견된 모든 URL을 저장할 집합 (중복 제거)
-  const allUrls = new Set();
-  allUrls.add(url);
-
-  // 브라우저 생성 여부 확인
-  let usedBrowser = browser;
-  const page = await usedBrowser.newPage();
-  try {
-    // 자바스크립트 대화상자(alert, confirm, prompt) 처리
-    page.on('dialog', async dialog => {
-      logger.info(`대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
-      await dialog.dismiss();
-    });
-
-    logger.info(`페이지 로드 시작: ${url}`);
-    await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 60000
-    });
-    logger.info(`페이지 로드 완료: ${url}`);
-
-    // 현재 URL 저장 (리다이렉트 가능성)
-    const currentUrl = page.url();
-    logger.info(`현재 URL: ${currentUrl}`);
-    if (currentUrl !== url) {
-      allUrls.add(currentUrl);
-    }
-
-
-    logger.info("=== onclick 스크립트 처리 중... ===");
-
-    // 온클릭 모듈에 브라우저 인스턴스 전달
-    const onclickResult = await extractAndProcessOnClicks({
-      browser,
-      url: currentUrl,
-      page:page,
-      headless: true,
-      maxConcurrency: 10, // 동시에 최대 3개 작업 실행
-      timeout: 5000      // 각 작업 5초 제한
-    });
-
-    // 처리 결과 출력
-      logger.info(`온클릭 처리 완료: ${onclickResult.processed || 0}개 중 ${onclickResult.successful || 0}개 성공`);
-      // 발견된 URL 추가
-      if (onclickResult.discoveredUrls && onclickResult.discoveredUrls.length > 0) {
-        onclickResult.discoveredUrls.forEach(url => {
-          if (url && url.startsWith('http') && isUrlAllowed(url,allowedDomains)) {
-            allUrls.add(url);
-          }
-        });
-    }
-    return Array.from(allUrls);
-
-  } catch (error) {
-    logger.error(` on click 처리 중 에러 발생 ${error}`);
-    return Array.from(allUrls);
-
-  } finally {
-    await page.close();
-  }
-}
-
-
-async function extractAndExecuteScriptsPromise(url, allowedDomains, browser = null) {
-  // 발견된 모든 URL을 저장할 집합 (중복 제거)
-  const allUrls = new Set();
-  allUrls.add(url);
-
-  const page = await browser.newPage();
+async function extractAndExecuteScripts(url, allowedDomains = [], browser) {
+  const startTime = Date.now();
+  logger.debug(`URL ${url}에서 자바스크립트 이벤트 핸들러 추출 중...`);
 
   try {
-    // 자바스크립트 대화상자 처리
+    // 새 페이지 열기
+    const page = await browser.newPage();
+
+    // JavaScript 대화 상자 무시
     page.on('dialog', async dialog => {
-      logger.info(`대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
       await dialog.dismiss();
     });
 
     // 페이지 로드
-    logger.info(`페이지 로드 시작: ${url}`);
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-    logger.info(`페이지 로드 완료: ${url}`);
+    await page.goto(url, {
+      waitUntil: 'networkidle2',
+      timeout: CONFIG.BROWSER.TIMEOUT.PAGE_LOAD
+    });
 
-    // 현재 URL 저장 (리다이렉트 가능성)
-    const currentUrl = page.url();
-    if (currentUrl !== url) {
-      allUrls.add(currentUrl);
-    }
+    // onClick 이벤트 핸들러 추출 및 실행
+    const processStartTime = Date.now();
+    const extractedUrls = await processOnclick(page, url, allowedDomains);
+    const processRuntime = Date.now() - processStartTime;
+    logger.eventInfo('process_onclick', { url, runtime: processRuntime });
 
-    // 1. onClick 이벤트가 있는 모든 요소 찾기
-    const onClickElements = await page.$$('[onclick]');
-    logger.info(`${onClickElements.length}개의 onClick 요소 발견`);
+    // 추출된 URL 및 페이지 정리
+    await page.close();
 
-    // 2. 각 요소의 onClick 이벤트를 병렬로 처리
-    if (onClickElements.length > 0) {
-      // 병렬 처리를 위한 Promise 배열
-      const clickPromises = onClickElements.slice(0, 10).map(async (element, index) => {
+    const runtime = Date.now() - startTime;
+    logger.debug(`자바스크립트 처리 완료. 추출된 URL: ${extractedUrls.length}개`);
+
+    return extractedUrls;
+  } catch (error) {
+    logger.error(`자바스크립트 처리 중 오류:`, error);
+    const runtime = Date.now() - startTime;
+    return [];
+  }
+}
+
+/**
+ * onClick 이벤트 핸들러를 처리하여 URL 추출
+ * @param {Page} page - Puppeteer 페이지 객체
+ * @param {string} baseUrl - 기준 URL
+ * @param {Array<string>} allowedDomains - 허용된 도메인 목록
+ * @returns {Promise<Array<string>>} 추출된 URL 목록
+ */
+async function processOnclick(page, baseUrl, allowedDomains = []) {
+  const startTime = Date.now();
+
+  try {
+    // 페이지 내의 모든 클릭 가능한 요소에서 URL 추출
+    const extractedUrls = await page.evaluate((baseUrl) => {
+      const results = [];
+      // 클릭 이벤트를 가질 수 있는 모든 요소 수집
+      const clickableElements = Array.from(document.querySelectorAll(
+        'a[onclick], button, input[type="button"], input[type="submit"], [role="button"], [onclick]'
+      ));
+
+      // 현재 문서의 URL 객체
+      const currentUrl = new URL(baseUrl);
+      const baseOrigin = currentUrl.origin;
+
+      // 각 요소에 클릭 이벤트 발생시키기
+      clickableElements.forEach(element => {
         try {
-          // 새 페이지 열기 (각 클릭을 독립적으로 처리)
-          const clickPage = await browser.newPage();
+          // 안전하게 클릭 이벤트 발생
+          // 직접적인 onclick 속성 분석
+          const onclickAttr = element.getAttribute('onclick');
+          if (onclickAttr) {
+            // href 또는 location.href 패턴 찾기
+            const hrefMatches = onclickAttr.match(/(?:href|location\.href|window\.location)\s*=\s*['"]([^'"]+)['"]/i);
+            if (hrefMatches && hrefMatches[1]) {
+              let url = hrefMatches[1];
 
-          // 원본 페이지와 동일한 URL 로드
-          await clickPage.goto(currentUrl, { waitUntil: 'networkidle2' });
-
-          // 같은 위치의 요소 찾기 (새로운 페이지에서)
-          const selector = await page.evaluate(el => {
-            // 요소의 고유 선택자 생성
-            // 함수를 직접 정의하여 전달
-            function generateUniqueSelector(element) {
-              if (element.id) {
-                return `#${element.id}`;
+              // 상대 URL 처리
+              if (url.startsWith('/')) {
+                url = `${baseOrigin}${url}`;
+              } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                const urlObj = new URL(url, baseUrl);
+                url = urlObj.href;
               }
 
-              // 요소의 태그 이름, 클래스 이름, 인덱스 등을 사용하여 선택자 생성
-              let selector = element.tagName.toLowerCase();
-
-              // 클래스 추가
-              if (element.className && typeof element.className === 'string') {
-                const classes = element.className.trim().split(/\s+/);
-                if (classes.length > 0 && classes[0] !== '') {
-                  selector += `.${classes.join('.')}`;
-                }
-              }
-
-              // 속성 추가
-              if (element.hasAttribute('onclick')) {
-                selector += '[onclick]';
-              }
-
-              // 요소의 부모 노드에서의 순서 추가
-              if (element.parentNode) {
-                const siblings = Array.from(element.parentNode.children);
-                const sameTagSiblings = siblings.filter(el => el.tagName === element.tagName);
-                if (sameTagSiblings.length > 1) {
-                  const index = sameTagSiblings.indexOf(element) + 1;
-                  selector += `:nth-of-type(${index})`;
-                }
-              }
-
-              return selector;
+              results.push(url);
             }
-
-            return generateUniqueSelector(el);
-          }, element);
-
-          // 해당 요소 클릭
-          await clickPage.waitForSelector(selector, { timeout: 5000 });
-          await clickPage.click(selector);
-
-          // 클릭 후 잠시 대기 (네비게이션이나 AJAX 요청 대기)
-          await clickPage.waitForTimeout(1000);
-
-          // 클릭 후 URL 변경 확인
-          const newUrl = clickPage.url();
-          if (newUrl !== currentUrl && isUrlAllowed(newUrl, allowedDomains)) {
-            allUrls.add(newUrl);
           }
 
-          // 페이지에서 다른 모든 링크 추출
-          const pageLinks = await clickPage.evaluate(() => {
-            return Array.from(document.querySelectorAll('a[href]'))
-              .map(a => a.href)
-              .filter(href => href.startsWith('http'));
-          });
-
-          // 허용된 도메인의 URL만 추가
-          pageLinks.forEach(link => {
-            if (isUrlAllowed(link, allowedDomains)) {
-              allUrls.add(link);
+          // 기본 속성에서 URL 추출 시도
+          if (element.hasAttribute('href')) {
+            const href = element.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+              let url;
+              try {
+                url = new URL(href, baseUrl).href;
+                results.push(url);
+              } catch (e) {
+                // URL 생성 오류 - 잘못된 형식일 수 있음
+              }
             }
-          });
-
-          // 페이지 닫기
-          await clickPage.close();
-          return { success: true, url: newUrl };
-        } catch (error) {
-          logger.error(`요소 ${index} 클릭 처리 중 오류: ${error.message}`);
-          return { success: false, error: error.message };
+          }
+        } catch (elementError) {
+          // 요소별 오류 처리 - 조용히 넘어감
         }
       });
 
-      // 모든 클릭 이벤트를 병렬로 처리
-      const clickResults = await Promise.all(clickPromises);
+      return Array.from(new Set(results)); // 중복 제거
+    }, baseUrl);
 
-      // 결과 요약
-      const successful = clickResults.filter(r => r.success).length;
-      logger.info(`onClick 처리 완료: ${clickPromises.length}개 중 ${successful}개 성공`);
-    }
+    // 중복 제거 및 허용된 도메인만 필터링
+    const uniqueUrls = [...new Set(extractedUrls)];
+    const filteredUrls = uniqueUrls.filter(url => {
+      try {
+        return isUrlAllowed(url, allowedDomains);
+      } catch (e) {
+        return false;
+      }
+    });
 
-    return Array.from(allUrls);
+    const runtime = Date.now() - startTime;
+    logger.debug(`onClick 이벤트 처리 완료. ${filteredUrls.length}개 URL 추출됨.`);
+
+    return filteredUrls;
   } catch (error) {
-    logger.error(`onClick 처리 중 오류 발생: ${error.message}`);
-    return Array.from(allUrls);
-  } finally {
-    await page.close();
+    logger.error(`onClick 이벤트 처리 중 오류:`, error);
+    return [];
   }
+}
+
+// Promise 형식의 확장 함수
+function extractAndExecuteScriptsPromise(url, allowedDomains = []) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      logger.debug(`독립 프로세스에서 URL ${url} 처리 중...`);
+
+      // Puppeteer 브라우저 초기화
+      const puppeteer = require('puppeteer');
+      const browser = await puppeteer.launch({
+        executablePath: await executablePath(),
+        headless: 'new',
+        args: CONFIG.BROWSER.LAUNCH_ARGS
+      });
+
+      try {
+        // extractAndExecuteScripts 함수 사용
+        const urls = await extractAndExecuteScripts(url, allowedDomains, browser);
+        resolve(urls);
+      } catch (error) {
+        reject(error);
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 // 모듈로 내보내기
@@ -271,5 +212,6 @@ module.exports = {
   scrollToBottom,
   infiniteScroll,
   extractAndExecuteScripts,
-  extractAndExecuteScriptsPromise
+  extractAndExecuteScriptsPromise,
+  processOnclick
 };
