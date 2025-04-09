@@ -7,7 +7,6 @@ on:
       - main  # 메인 브랜치에 푸시될 때 실행
     paths:
       - 'crawl/**'  # crawl 디렉토리 내의 파일이 변경된 경우만 실행
-      - 'proxy/**'  # proxy 디렉토리 내의 파일이 변경된 경우만 실행
       - 'docker-compose.yml'  # docker-compose.yml 파일이 변경된 경우만 실행
   workflow_dispatch:
     inputs:
@@ -94,7 +93,7 @@ jobs:
           script: |
             # 작업 디렉토리 생성 및 이동
             mkdir -p ~/CV_Search
-
+            mkdir ~/CV_Search/logs
             # 압축 파일 해제
             tar -xzvf ~/deploy.tar.gz -C ~/CV_Search
 
