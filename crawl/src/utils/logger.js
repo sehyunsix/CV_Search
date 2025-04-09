@@ -137,7 +137,7 @@ formatJsonMessage(level,  data) {
   // JSON 객체 구성 (제안된 형식에 맞게)
   const logObject = {
     timestamp: timestamp,
-    process: process.title || "cv-search-process",
+    process: process.env.PS_NAME || "cv-search-process",
     version: process.env.APP_VERSION || "1.0.0",
     device: this.hostname,
     level: level.toUpperCase(),

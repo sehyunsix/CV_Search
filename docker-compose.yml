@@ -19,7 +19,7 @@ services:
       retries: 3
       start_period: 20s
     volumes:
-      - ./crawl/logs:/app/logs
+      - ./logs:/app/logs
     logging:
       driver: "json-file"
       options:
@@ -44,18 +44,53 @@ services:
       start_period: 20s
     volumes:
       - ./logs:/app/crawl/logs
+    environment:
+      - PS_NAME=crawl
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
+  gemini-parse:
+    image: sehyunsix/crawl-server:latest
+    command: npm run gemini-parse
+    container_name: myweb-gemini-parse
+    restart: unless-stopped
+    env_file: ".env"
+    networks:
+      - cv-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - ./logs:/app/crawl/logs
+    environment:
+      - PS_NAME=parse
+      - BATCH_SIZE=1000
+      - MAX_RETRIES=3
+      - CONCURRENCY=5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.14.1
     container_name: myweb-filebeat
     volumes:
       - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - ./crawl/logs:/usr/share/filebeat/logs:ro
+      - ./logs:/usr/share/filebeat/logs:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     user: root
