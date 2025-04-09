@@ -129,76 +129,37 @@ class Logger {
 
   /**
    * 로그 메시지 JSON 포맷
-   */
-formatJsonMessage(level, message, ...args) {
+   *//**
+ * 로그 메시지 JSON 포맷
+ */
+formatJsonMessage(level,  data) {
   const timestamp = new Date().toISOString();
-
-  // 추가 인자를 객체로 만들기
-  let additionalData = {};
-  for (const arg of args) {
-    if (typeof arg === 'object' && arg !== null) {
-      additionalData = { ...additionalData, ...arg };
-    }
-  }
-
-  // 메시지 처리
-  let finalMessage = message;
-  if (typeof message === 'object' && message !== null) {
-    additionalData = { ...additionalData, ...message };
-    finalMessage = JSON.stringify(message);
-  }
-
-  // JSON 객체 구성
+  // JSON 객체 구성 (제안된 형식에 맞게)
   const logObject = {
-    "@timestamp": timestamp,
+    timestamp: timestamp,
+    process: process.title || "cv-search-process",
+    version: process.env.APP_VERSION || "1.0.0",
+    device: this.hostname,
     level: level.toUpperCase(),
-    message: finalMessage,
-    hostname: this.hostname,
-    pid: this.pid,
-    application: this.options.appName || "cv-search",  // 애플리케이션 식별자 추가
-    logger_name: this.options.filename || "app",      // 로거 이름 추가
-    environment: process.env.NODE_ENV || "development", // 환경 정보 추가
-    ...additionalData
+    application: this.options.appName || "cv-search",
+    logger_name: this.options.filename || "app",
+    environment: process.env.NODE_ENV || "development",
+    ...data.event ? data : {message:data}
   };
 
 
-  const getCircularReplacer = () => {
-    const seen = new WeakSet();
-    return (key, value) => {
-      if (typeof value === 'object' && value !== null) {
-        if (seen.has(value)) {
-          return '[Circular Reference]';
-        }
-        seen.add(value);
-      }
-      return value;
-    };
-  };
 
-    return JSON.stringify(logObject, getCircularReplacer());
-
+  return JSON.stringify(logObject);
 }
 
   /**
    * 로그 메시지 텍스트 포맷
    */
-  formatTextMessage(level, message, ...args) {
+  formatTextMessage(level, data) {
     const timestamp = this.options.showTimestamp ?
       `[${new Date().toISOString()}] ` : '';
+     return `${timestamp}${level}: ${data.event? data.event:data}${data.error?' error :'+data.error:''} runtime: ${data.runtime} ms`.trim();
 
-    const formattedLevel = level.toUpperCase().padEnd(5);
-
-    // 객체를 문자열로 변환 (최대 2단계 깊이)
-    const formattedMessage = typeof message === 'object'
-      ? util.inspect(message, { depth: 2 })
-      : message;
-
-    // 추가 인자들도 처리
-    const formattedArgs = args.map(arg =>
-      typeof arg === 'object' ? util.inspect(arg, { depth: 2 }) : arg
-    ).join(' ');
-
-    return `${timestamp}${formattedLevel}: ${formattedMessage} ${formattedArgs}`.trim();
   }
 
   /**
@@ -208,11 +169,11 @@ formatJsonMessage(level, message, ...args) {
     if (!this.options.useColors) return message;
 
     switch (level) {
-      case 'error': return `${colors.red}${message}${colors.reset}`;
-      case 'warn':  return `${colors.yellow}${message}${colors.reset}`;
-      case 'info':  return `${colors.green}${message}${colors.reset}`;
-      case 'debug': return `${colors.blue}${message}${colors.reset}`;
-      case 'trace': return `${colors.gray}${message}${colors.reset}`;
+      case 'ERROR': return `${colors.red}${message}${colors.reset}`;
+      case 'WARN':  return `${colors.yellow}${message}${colors.reset}`;
+      case 'INFO':  return `${colors.green}${message}${colors.reset}`;
+      case 'DEBUG': return `${colors.blue}${message}${colors.reset}`;
+      case 'TRACE': return `${colors.gray}${message}${colors.reset}`;
       default:      return message;
     }
   }
@@ -231,10 +192,43 @@ formatJsonMessage(level, message, ...args) {
     }
   }
 
+  // 각 로그 레벨별 메서드 아래에 추가:
+
+/**
+ * 이벤트 기반 로깅 (측정된 런타임 포함)
+ * @param {string} event - 이벤트 이름
+ * @param {string} message - 로그 메시지
+ * @param {number} runtime - 실행 시간 (밀리초)
+ * @param {Object} data - 추가 데이터
+ */
+logEvent(level, event, data = {}) {
+  const eventData = {
+    event,
+    ...data
+  };
+  this.log(level, eventData);
+}
+
+// 편의를 위한 각 레벨별 이벤트 로깅 메서드
+eventInfo(event,  data = {}) {
+  this.logEvent('INFO', event ,data);
+}
+
+eventError(event, data = {}) {
+  this.logEvent('ERROR',  event,data);
+}
+
+eventWarn(event,  data = {}) {
+  this.logEvent('WARN', event, data);
+}
+
+eventDebug(event,  data = {}) {
+  this.logEvent('DEBUG', event, data);
+}
   /**
    * 로그 출력
    */
-  log(level, message, ...args) {
+  log(level, data) {
     const logLevel = LOG_LEVELS[level.toUpperCase()];
 
     // 설정된 로그 레벨보다 낮은 레벨은 무시
@@ -245,15 +239,16 @@ formatJsonMessage(level, message, ...args) {
     // JSON 또는 텍스트 형식으로 포맷팅
     let formattedMessage;
     if (this.options.jsonFormat) {
-      formattedMessage = this.formatJsonMessage(level, message, ...args);
+      formattedMessage = this.formatJsonMessage(level, data);
+
     } else {
-      formattedMessage = this.formatTextMessage(level, message, ...args);
+      formattedMessage = this.formatTextMessage(level, data);
     }
 
     // 콘솔에 출력
     if (this.options.toConsole) {
       const consoleMessage = this.options.jsonFormat ?
-        this.formatTextMessage(level, message, ...args) : formattedMessage;
+      this.formatTextMessage(level, data) : formattedMessage;
       console.log(this.colorize(level, consoleMessage));
     }
 
@@ -264,24 +259,24 @@ formatJsonMessage(level, message, ...args) {
   }
 
   // 각 로그 레벨별 메서드
-  error(message, ...args) {
-    this.log('error', message, ...args);
+  error(data) {
+    this.log('error',  data);
   }
 
-  warn(message, ...args) {
-    this.log('warn', message, ...args);
+  warn(data) {
+    this.log('warn',  data);
   }
 
-  info(message, ...args) {
-    this.log('info', message, ...args);
+  info(data) {
+    this.log('info',  data);
   }
 
-  debug(message, ...args) {
-    this.log('debug', message, ...args);
+  debug(data) {
+    this.log('debug', data);
   }
 
-  trace(message, ...args) {
-    this.log('trace', message, ...args);
+  trace(data) {
+    this.log('trace',  data);
   }
 }
 
@@ -289,6 +284,7 @@ formatJsonMessage(level, message, ...args) {
 const defaultLogger = new Logger({
   logDir: process.env.LOG_DIR || './logs',
   level: process.env.LOG_LEVEL || 'info',
+  toConsole : true,
   jsonFormat: true,
   rotateDaily: true
 });

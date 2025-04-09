@@ -33,18 +33,17 @@ async function processOnClickEvents(options) {
     results: []
   };
 
- logger.info(`=== onclick 이벤트 처리 시작 (${onclickElements.length}개) ===`);
 
   // onclick 요소가 없으면 바로 반환
   if (!onclickElements || onclickElements.length === 0) {
-   logger.info("유효한 onclick 이벤트가 없습니다.");
+   logger.debug("유효한 onclick 이벤트가 없습니다.");
     return result;
   }
 
   try {
     // 병렬 처리를 위한 작업 풀 생성
     const workerPool = new WorkerPool(maxConcurrency);
-
+    const starTime = Date.now();
     // 각 onclick 항목을 작업으로 변환
     const tasks = onclickElements.map((item, idx) => ({
       id: idx + 1,
@@ -58,7 +57,6 @@ async function processOnClickEvents(options) {
       browser: browser // 브라우저 인스턴스 재사용 (worker-task에서 이를 지원해야 함)
     }));
 
-   logger.info(`${tasks.length}개의 onclick 작업을 병렬로 처리합니다... (동시 실행: ${maxConcurrency})`);
 
     // 모든 작업 병렬 실행
     const onclickResults = await workerPool.processTasks(tasks);
@@ -78,7 +76,7 @@ async function processOnClickEvents(options) {
           const detectedUrl = onclickResult.detectedUrl;
           if (detectedUrl && typeof detectedUrl === 'string' && detectedUrl.startsWith('http')) {
             result.discoveredUrls.add(detectedUrl);
-           logger.info(`[OnClick ${onclickResult.index}] 새 URL 발견: ${detectedUrl}`);
+           logger.debug(`[OnClick ${onclickResult.index}] 새 URL 발견: ${detectedUrl}`);
           }
         }
       } else {
@@ -86,15 +84,17 @@ async function processOnClickEvents(options) {
       }
     });
 
-   logger.info(`=== onclick 이벤트 처리 완료 ===`);
-   logger.info(`- 처리된 이벤트: ${result.processed}/${result.totalElements}개`);
-   logger.info(`- 성공: ${result.successful}개`);
-   logger.info(`- 실패: ${result.failed}개`);
-   logger.info(`- 발견된 URL: ${result.discoveredUrls.size}개`);
+   logger.debug(`=== onclick 이벤트 처리 완료 ===`);
+   logger.debug(`- 처리된 이벤트: ${result.processed}/${result.totalElements}개`);
+   logger.debug(`- 성공: ${result.successful}개`);
+   logger.debug(`- 실패: ${result.failed}개`);
+  logger.debug(`- 발견된 URL: ${result.discoveredUrls.size}개`);
+   const runtime = Date.now() - starTime;
+   logger.eventInfo('execute_onclick', {runtime});
 
     return result;
   } catch (error) {
-    console.error('onclick 이벤트 처리 중 오류:', error);
+    logger.debug('onclick 실행 오류:', error);
     result.error = error.toString();
     return result;
   }
@@ -120,20 +120,16 @@ async function extractAndProcessOnClicks(options) {
     timeout = 5000
   } = options;
 
- logger.info(`[OnClick 모듈] URL ${url} 처리 시작...`);
 
   try {
 
     // 페이지 설정
     page.on('dialog', async dialog => {
-     logger.info(`[OnClick 모듈] 대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
+     logger.debug(`[OnClick 모듈] 대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
       await dialog.dismiss();
     });
-      // 페이지 스크롤
-   logger.info('페이지 스크롤 시작...');
-    // await baseWorker.infiniteScroll(page, 5); // 스크롤 5번만 수행
-   logger.info('페이지 스크롤 완료');
 
+    const startTime = Date.now();
 
     // onclick 요소 추출
     const onclickElements = await page.evaluate(() => {
@@ -150,7 +146,13 @@ async function extractAndProcessOnClicks(options) {
       });
     });
 
-   logger.info(`[OnClick 모듈] ${onclickElements.length}개의 onclick 요소를 발견했습니다.`);
+    const runtime = Date.now() - startTime;
+
+
+   logger.eventInfo('extract_onclick', { runtime });
+
+
+   logger.debug(`[OnClick 모듈] ${onclickElements.length}개의 onclick 요소를 발견했습니다.`);
 
     // 발견한 onclick 요소들 처리
     if (onclickElements.length > 0) {
@@ -184,7 +186,7 @@ async function extractAndProcessOnClicks(options) {
       };
     }
   } catch (error) {
-    console.error('[OnClick 모듈] 처리 중 오류:', error);
+    logger.debug('onclick 실행 오류:', error);
     return {
       success: false,
       url: url,
