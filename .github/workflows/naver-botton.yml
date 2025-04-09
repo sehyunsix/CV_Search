@@ -67,6 +67,7 @@ jobs:
           mkdir -p deploy
           cp docker-compose.yml deploy/
           cp deploy.sh deploy/
+          cp -r monitoring deploy/
           chmod +x deploy/deploy.sh
 
           # 압축
