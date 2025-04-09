@@ -313,7 +313,7 @@ async saveRecruitInfo(recruitData) {
       }
 
       // 1. Claude API로 URL 분석
-      logger.info(`URL 분석 시작: ${urlData.url}`);
+      logger.debug(`URL 분석 시작: ${urlData.url}`);
       const response = await this.requestUrlParse(urlData);
 
       if (!response) {

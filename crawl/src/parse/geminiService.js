@@ -41,9 +41,9 @@ class GeminiService {
 
     // API 키 정보 로깅
     if (this.apiKeys.length > 0) {
-      logger.info(`Gemini API 키 ${this.apiKeys.length}개 로드됨. 현재 인덱스: ${this.currentKeyIndex}`);
+      logger.debug(`Gemini API 키 ${this.apiKeys.length}개 로드됨. 현재 인덱스: ${this.currentKeyIndex}`);
     } else {
-      logger.warn('Gemini API 키가 설정되지 않았습니다. 테스트 환경으로 실행합니다.');
+      logger.debug('Gemini API 키가 설정되지 않았습니다. 테스트 환경으로 실행합니다.');
     }
 
     // API 키가 있는 경우에만 클라이언트 초기화
@@ -58,7 +58,7 @@ class GeminiService {
   initializeClient() {
     try {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
-      logger.info(`Gemini API 클라이언트 초기화 성공 (키 인덱스: ${this.currentKeyIndex})`);
+      logger.debug(`Gemini API 클라이언트 초기화 성공 (키 인덱스: ${this.currentKeyIndex})`);
     } catch (error) {
       logger.error(`Gemini API 클라이언트 초기화 실패: ${error.message}`);
       this.genAI = null;
@@ -81,8 +81,7 @@ class GeminiService {
 
     // 새 키로 클라이언트 초기화
     this.initializeClient();
-
-    logger.info(`API 키 변경됨. 새 인덱스: ${this.currentKeyIndex}`);
+    logger.debug(`API 키 변경됨. 새 인덱스: ${this.currentKeyIndex}`);
     return true;
   }
 
@@ -114,7 +113,7 @@ class GeminiService {
 
         // 다음 키로 변경
         if (this.rotateApiKey()) {
-          logger.info(`새 API 키로 재시도 중... (시도: ${retryCount + 1}/${this.apiKeys.length})`);
+          logger.debug(`새 API 키로 재시도 중... (시도: ${retryCount + 1}/${this.apiKeys.length})`);
 
           // 재귀적으로 다시 시도 (재시도 카운터 증가)
           return this.generateContent(prompt, content, retryCount + 1);
@@ -122,7 +121,7 @@ class GeminiService {
       }
 
       // 순환이 불가능하거나 다른 종류의 에러인 경우 에러 발생
-      logger.error('Gemini API 요청 오류:', error);
+      logger.debug('Gemini API 요청 오류:', error);
       throw new Error(`Gemini API 요청 실패: ${error.message}`);
     }
   }
@@ -235,11 +234,11 @@ ${content}
       // 프롬프트 준비 및 API 호출
       const promptText = this.getRecruitmentPrompt(content);
       const genAIResult = await model.generateContent(promptText);
-      logger.info(genAIResult.response.usageMetadata);
+      logger.debug(genAIResult.response.usageMetadata);
 
       // 응답 텍스트 추출
       const responseText = genAIResult.response.text();
-      logger.info('Gemini API 응답 텍스트:', responseText);
+      logger.debug('Gemini API 응답 텍스트:', { responseText });
 
       // JSON 파싱
       const parsedResponse = JSON.parse(responseText);
@@ -250,11 +249,11 @@ ${content}
 
       // API 키 순환 조건: 한도 초과 에러고, 재시도 횟수가 키 개수보다 적은 경우
       if (isTooManyRequestsError && retryCount < this.apiKeys.length) {
-        logger.warn(`API 한도 초과 감지됨: ${error.message}`);
+        logger.debug(`API 한도 초과 감지됨: ${error.message}`);
 
         // 다음 키로 변경
         if (this.rotateApiKey()) {
-          logger.info(`새 API 키로 재시도 중... (시도: ${retryCount + 1}/${this.apiKeys.length})`);
+          logger.debug(`새 API 키로 재시도 중... (시도: ${retryCount + 1}/${this.apiKeys.length})`);
 
           // 재귀적으로 다시 시도 (재시도 카운터 증가)
           return this.parseRecruitment(content, retryCount + 1);
