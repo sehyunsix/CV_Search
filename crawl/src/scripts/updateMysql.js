@@ -55,6 +55,7 @@ async function processJobData(jobData) {
       requirements: jobData.requirements || null,
       preferred_qualifications: jobData.preferred_qualifications || null,
       ideal_candidate: jobData.ideal_candidate || null,
+      raw_jobs_text: jobData.raw_text || '', // MongoDB의 raw_text를 MySQL의 raw_jobs_text로 매핑
       posted_at: jobData.posted_at ? new Date(jobData.posted_at) : null,
       end_date: jobData.end_date ? new Date(jobData.end_date) : null,
       created_at: new Date(),

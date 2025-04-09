@@ -112,8 +112,8 @@ const table = new Table({
     }
 
     // 테이블 출력
-    logger.info(`\nURL 항목 요약 정보:`);
-    logger.info('\n'+table.toString());
+    logger.debug(`\nURL 항목 요약 정보:`);
+    logger.debug('\n'+table.toString());
 
     // 크롤링 통계가 있으면 표시
     if (this.crawlStats) {

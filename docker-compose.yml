@@ -20,12 +20,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   api:
     image: sehyunsix/crawl-server:latest
     command: npm run server
     ports:
-      - "8080:8080"
+      - "8080:8000"
     container_name: myweb-api
     restart: unless-stopped
     env_file: ".env"
@@ -37,6 +42,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    volumes:
+      - ./crawl/logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   crawl:
     image: sehyunsix/crawl-server:latest
@@ -54,7 +66,95 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    volumes:
+      - ./crawl/logs:/app/crawl/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.14.1
+    container_name: myweb-filebeat
+    volumes:
+      - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./crawl/logs:/usr/share/filebeat/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: root
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    networks:
+      - cv-network
+    command: ["--strict.perms=false"]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    container_name: myweb-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - cv-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.1
+    container_name: myweb-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PUBLICBASEURL=http://localhost:5601
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - cv-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:8.2.6
+    container_name: myweb-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - cv-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 networks:
   cv-network:
@@ -62,3 +162,7 @@ networks:
 
 volumes:
   nginx-config:
+  elasticsearch-data:
+    driver: local
+  grafana-data:
+    driver: local

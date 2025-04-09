@@ -48,7 +48,7 @@ async scrollPage(options = {}) {
     fullPage = false      // 전체 페이지 스크롤 여부
   } = options;
 
-  logger.info(`[Worker ${this.id}] 페이지 스크롤 시작...`);
+  logger.debug(`[Worker ${this.id}] 페이지 스크롤 시작...`);
 
   try {
     if (fullPage) {
@@ -61,12 +61,12 @@ async scrollPage(options = {}) {
           window.scrollBy(0, scrollDistance);
         }, distance);
 
-        logger.info(`[Worker ${this.id}] 스크롤 ${i + 1}/${steps} 완료 (${distance}px)`);
+        logger.debug(`[Worker ${this.id}] 스크롤 ${i + 1}/${steps} 완료 (${distance}px)`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
-    logger.info(`[Worker ${this.id}] 페이지 스크롤 완료`);
+    logger.debug(`[Worker ${this.id}] 페이지 스크롤 완료`);
   } catch (error) {
     logger.error(`[Worker ${this.id}] 페이지 스크롤 중 오류:`, error);
   }
@@ -78,7 +78,7 @@ async scrollPage(options = {}) {
  * @returns {Promise<void>}
  */
 async scrollFullPage(delay = 100) {
-  logger.info(`[Worker ${this.id}] 전체 페이지 스크롤 시작...`);
+  logger.debug(`[Worker ${this.id}] 전체 페이지 스크롤 시작...`);
 
   try {
     await this.page.evaluate(async (scrollDelay) => {
@@ -100,7 +100,7 @@ async scrollFullPage(delay = 100) {
       });
     }, delay);
 
-    logger.info(`[Worker ${this.id}] 전체 페이지 스크롤 완료`);
+    logger.debug(`[Worker ${this.id}] 전체 페이지 스크롤 완료`);
   } catch (error) {
     logger.error(`[Worker ${this.id}] 전체 페이지 스크롤 중 오류:`, error);
   }
@@ -112,7 +112,7 @@ async scrollFullPage(delay = 100) {
    */
   async execute() {
     // 작업 시작 로그
-    logger.info(`[Worker ${this.id}] onclick 스크립트 ${this.index}/${this.total} 실행 시작...`);
+    logger.debug(`[Worker ${this.id}] onclick 스크립트 ${this.index}/${this.total} 실행 시작...`);
 
     try {
       // 브라우저 및 페이지 초기화
@@ -138,7 +138,7 @@ async scrollFullPage(delay = 100) {
       // 자원 정리
       await this.cleanup();
 
-      logger.info(`[Worker ${this.id}] onclick ${this.index} 실행 완료: ${result.success ? (result.urlChanged ? '페이지 이동 감지' : '정상 실행') : '실패'}`);
+      logger.debug(`[Worker ${this.id}] onclick ${this.index} 실행 완료: ${result.success ? (result.urlChanged ? '페이지 이동 감지' : '정상 실행') : '실패'}`);
 
       return result;
     } catch (error) {
@@ -187,7 +187,7 @@ async scrollFullPage(delay = 100) {
   async setupPage() {
     // 자바스크립트 대화상자 처리
     this.page.on('dialog', async dialog => {
-      logger.info(`[Worker ${this.id}] onclick ${this.index} 대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
+      logger.debug(`[Worker ${this.id}] onclick ${this.index} 대화상자 감지: ${dialog.type()}, 메시지: ${dialog.message()}`);
       await dialog.dismiss();
     });
 
@@ -197,7 +197,7 @@ async scrollFullPage(delay = 100) {
     }, this.index, this.id);
 
     // 콘솔 로그를 가로채서 출력
-    this.page.on('console', msg => logger.info(`[Worker ${this.id}] onclick ${this.index} 콘솔:`, msg.text()));
+    this.page.on('console', msg => logger.debug(`[Worker ${this.id}] onclick ${this.index} 콘솔:`, msg.text()));
 
     // 페이지 로드
     await this.page.goto(this.currentUrl, {
@@ -350,7 +350,7 @@ async scrollFullPage(delay = 100) {
 
     // 실행 후 URL 확인
     const afterUrl = await this.page.url();
-    logger.info(`[Worker ${this.id}] afterUrl: ${afterUrl}`);
+    logger.debug(`[Worker ${this.id}] afterUrl: ${afterUrl}`);
 
     // URL 변경 확인
     if (afterUrl !== beforeUrl) {
