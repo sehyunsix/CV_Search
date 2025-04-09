@@ -85,7 +85,7 @@ class ParseManager {
       logger.debug(`${urls.length}개의 미분류 URL 추출 완료`);
       return urls;
     } catch (error) {
-      logger.error('미분류 URL 추출 오류:', error);
+      logger.eventError('fetch_unclassified_urls', { error:error.message });
       throw error;
     }
   }
@@ -713,7 +713,7 @@ if (require.main === module) {
 
       // 커맨드 라인 인수 파싱
       const args = process.argv.slice(2);
-      const batchSize = parseInt(args[0]) || process.env.BATCH_SIZE;
+      const batchSize = parseInt(args[0]) || parseInt(process.env.BATCH_SIZE);
       const delay = parseInt(args[1]) || 1000;
 
       // ParseManager 인스턴스 생성
