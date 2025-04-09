@@ -37,7 +37,7 @@ class ParseManager {
   async connect() {
     try {
       await mongoService.connect();
-      logger.info('MongoDB에 연결되었습니다.');
+      logger.debug('MongoDB에 연결되었습니다.');
     } catch (error) {
       logger.error('MongoDB 연결 오류:', error);
       throw error;
@@ -75,14 +75,13 @@ class ParseManager {
             url: '$suburl_list.url',
             text: '$suburl_list.text',
             title: '$suburl_list.title',
-            meta: '$suburl_list.meta',
             visitedAt: '$suburl_list.visitedAt'
           }
         }
       ];
 
       const urls = await VisitResult.aggregate(pipeline);
-      logger.info(`${urls.length}개의 미분류 URL 추출 완료`);
+      logger.debug(`${urls.length}개의 미분류 URL 추출 완료`);
       return urls;
     } catch (error) {
       logger.error('미분류 URL 추출 오류:', error);
@@ -90,31 +89,50 @@ class ParseManager {
     }
   }
 
-  /**
-   * URL이 채용공고인지 Gemini API로 판별
-   * @param {Object} urlData - URL 데이터 객체
-   * @returns {Promise<Object>} 판별 결과와 파싱된 데이터
-   */
-  async requestUrlParse(urlData) {
-    try {
-      const { url, title, text, meta } = urlData;
+/**
+ * URL이 채용공고인지 Gemini API로 판별
+ * @param {Object} urlData - URL 데이터 객체
+ * @returns {Promise<Object>} 판별 결과와 파싱된 데이터
+ */
+async requestUrlParse(urlData) {
+  const startTime = Date.now();
 
-      // 분석할 콘텐츠 구성
-      const content = `
-      Title: ${title || ''}
-      Meta Description: ${meta?.description || ''}
+  try {
+    const { url, title, text } = urlData;
 
-      Content:
-      ${text?.substring(0, 5000) || ''} // 텍스트가 너무 길면 잘라냄
-      `;
-      const response = await this.geminiService.parseRecruitment(content);
-      return response;
-    }
-    catch(error) {
-      logger.warn(`텍스트 업무 내용으로 변환 중 오류:${error}`)
-    }
+    // 분석할 콘텐츠 구성
+    const content = `
+    Title: ${title || ''}
 
+    Content:
+    ${text?.substring(0, 5000) || ''} // 텍스트가 너무 길면 잘라냄
+    `;
+
+    logger.debug(`URL 내용 분석 요청: ${url}`);
+    const response = await this.geminiService.parseRecruitment(content);
+
+    const runtime = Date.now() - startTime;
+    logger.eventInfo('parse_url_content', {
+      url: url,
+      isRecruit: response?.success || false,
+      contentLength: content.length,
+      runtime: runtime
+    });
+
+    return response;
+  } catch (error) {
+    const runtime = Date.now() - startTime;
+    logger.warn(`텍스트 업무 내용으로 변환 중 오류: ${error}`);
+    logger.eventError('parse_url_content_error', {
+      url: urlData?.url,
+      error: error.message,
+      runtime: runtime,
+      stack: error.stack
+    });
+
+    throw error; // 오류를 상위로 전파하여 재시도 메커니즘이 작동하도록 함
   }
+}
 
 
 
@@ -250,103 +268,51 @@ convertToRecruitInfoSchema(geminiResponse, urlData) {
   }
 }
 
- /**
- * SubUrl의 isRecruit 상태 업데이트
- * @param {string} url - 업데이트할 URL
- * @param {boolean} isRecruit - 채용공고 여부
- * @returns {Promise<boolean>} 성공 여부
- */
-async updateSubUrlStatus(url, isRecruit) {
+  async updateSubUrlStatus(url, isRecruit) {
+   const startTime = Date.now();
+
   try {
+    const domain = extractDomain(url);
 
-
-    let result;
-    const domain =extractDomain(url);
-    // 1. 도메인이 추출된 경우: 도메인으로 먼저 필터링
-    if (domain) {
-      logger.debug(`도메인으로 필터링: ${domain}, URL: ${url}`);
-
-      // 1단계: 도메인으로 문서 찾기
-      const visitResults = await VisitResult.find({ domain });
-
-      // 결과가 없으면 실패
-      if (!visitResults || visitResults.length === 0) {
-        logger.warn(`도메인 ${domain}에 해당하는 문서를 찾을 수 없습니다`);
-      } else{
-        // 2단계: 각 문서에서 URL 찾아 업데이트
-        let updated = false;
-        let updatedDocId = null;
-        let updatedSubUrlIndex = -1;
-
-        for (const visitResult of visitResults) {
-          // suburl_list 배열 내에서 URL 찾기
-          const subUrlIndex = visitResult.suburl_list?.findIndex(item => item.url === url);
-
-          // 해당 URL을 찾은 경우
-          if (subUrlIndex !== -1 && subUrlIndex !== undefined) {
-            logger.warn(`URL ${url}을 도메인 ${domain} 문서에서 찾았습니다`);
-
-            // 해당 항목 업데이트
-            visitResult.suburl_list[subUrlIndex].isRecruit = isRecruit;
-            visitResult.suburl_list[subUrlIndex].updated_at = new Date();
-            visitResult.markModified('suburl_list'); // 이 줄 추가
-            this.connect();
-            await visitResult.save();
-
-            updatedDocId = visitResult._id;
-            updatedSubUrlIndex = subUrlIndex;
-            updated = true;
-            // 업데이트 후 결과 확인
-            // 데이터를 다시 가져와서 업데이트가 제대로 되었는지 확인
-            const updatedVisitResult = await VisitResult.findById(updatedDocId);
-
-            if (updatedVisitResult &&
-                updatedVisitResult.suburl_list &&
-                updatedVisitResult.suburl_list[updatedSubUrlIndex]) {
-
-              const updatedItem = updatedVisitResult.suburl_list[updatedSubUrlIndex];
-              const isUpdated = updatedItem.isRecruit === isRecruit;
-
-              logger.info(`URL ${url} 업데이트 확인 결과: ${isUpdated ? '성공' : '실패'}`);
-              logger.debug('업데이트된 항목:', {
-                url: updatedItem.url,
-                isRecruit: updatedItem.isRecruit,
-                updated_at: updatedItem.updated_at
-              });
-
-              // 업데이트가 실제로 적용되지 않았다면 updated 플래그 수정
-              if (!isUpdated) {
-                updated = false;
-              }
-            } else {
-              logger.warn(`URL ${url} 업데이트 후 데이터를 찾을 수 없습니다`);
-              updated = false; // 데이터를 찾을 수 없으면 업데이트 실패로 처리
-            }
-            break;
-          }
-        }
-
-        // 모든 문서를 확인했지만 URL을 찾지 못한 경우
-        if (!updated) {
-          logger.warn(`도메인 ${domain} 문서 내에서 URL ${url}을 찾을 수 없습니다`);
-          // 여기서 필요에 따라 추가 처리 가능
-          return false;
-        } else {
-          // URL을 성공적으로 업데이트한 경우
-          result = { modifiedCount: 1 };
-        }
-      }
+    if (!domain) {
+      logger.warn(`도메인을 추출할 수 없습니다: ${url}`);
+      return false;
     }
 
-    const success = result && result.modifiedCount > 0;
-    logger.info(`URL ${url}의 isRecruit 상태를 ${isRecruit}로 업데이트 ${success ? '성공' : '실패'}`);
+    // 원자적 업데이트 사용 - findOneAndUpdate로 직접 업데이트
+    const result = await VisitResult.findOneAndUpdate(
+      { domain, 'suburl_list.url': url },
+      {
+        $set: {
+          'suburl_list.$.isRecruit': isRecruit,
+          'suburl_list.$.updated_at': new Date()
+        }
+      },
+      { new: true }
+    );
+    const runtime = Date.now() - startTime;
+    const success = !!result;
+    logger.debug(`URL ${url}의 isRecruit 상태를 ${isRecruit}로 업데이트 ${success ? '성공' : '실패'}`);
+
+    logger.eventInfo('update_url_status', {
+      url,
+      domain,
+      isRecruit,
+      success,
+      runtime,
+      reason: success ? null : 'document_not_found'
+    });
     return success;
+
   } catch (error) {
-    logger.error(`URL 상태 업데이트 오류 (${url}):`, error);
+    logger.eventError('update_url_status', {
+      url,
+      error: error.message,
+      stack: error.stack
+    });
     return false;
   }
 }
-
   /**
    * 채용공고 정보를 RecruitInfo 컬렉션에 저장
    * @param {Object} recruitData - 채용공고 데이터
@@ -365,7 +331,7 @@ async updateSubUrlStatus(url, isRecruit) {
         }
       );
 
-      logger.info(`URL ${recruitData.url} 채용정보 저장 완료`);
+      logger.debug(`URL ${recruitData.url} 채용정보 저장 완료`);
       return result;
     } catch (error) {
       logger.error(`채용정보 저장 오류 (${recruitData.url}):`, error);
@@ -383,7 +349,7 @@ async processUrl(urlData) {
     this.stats.processed++;
 
     // 1. Gemini API로 URL 분석
-    logger.info(`URL 분석 시작: ${urlData.url}`);
+    logger.debug(`URL 분석 시작: ${urlData.url}`);
     const response = await this.requestUrlParse(urlData);
 
     if (!response) {
@@ -399,13 +365,13 @@ async processUrl(urlData) {
 
       // 3. RecruitInfo 모델 형식으로 변환
       const recruitInfoData = this.convertToRecruitInfoSchema(response, urlData);
-      logger.info(recruitInfoData);
+      logger.debug(recruitInfoData);
       if (recruitInfoData) {
-        logger.info(recruitInfoData);
+        logger.debug(recruitInfoData);
         await this.saveRecruitInfo(recruitInfoData);
         this.stats.saved++;
       } else {
-        logger.warn(`변환된 RecruitInfo 데이터가 없습니다: ${ urlData.url}`);
+        logger.debug(`변환된 RecruitInfo 데이터가 없습니다: ${ urlData.url}`);
       }
 
       return {
@@ -426,7 +392,7 @@ async processUrl(urlData) {
     }
   } catch (error) {
     this.stats.failed++;
-    logger.error(`URL 처리 오류 (${urlData.url}):`, error);
+    logger.eventError(`process_url`, { error: error.message });
     return {
       url: urlData.url,
       success: false,
@@ -443,84 +409,279 @@ async processUrl(urlData) {
   async wait(ms = this.delayBetweenRequests) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+/**
+ * 일괄 처리 실행 - 병렬 처리 및 성능 개선
+ * @param {number} batchSize - 처리할 URL 수
+ * @param {number} concurrency - 동시 처리할 URL 수 (기본값: 5)
+ * @returns {Promise<Object>} 처리 결과 통계
+ */
+async run(batchSize = this.batchSize, concurrency = 5) {
+  const startTime = Date.now();
 
-  /**
-   * 일괄 처리 실행
-   * @param {number} batchSize - 처리할 URL 수
-   * @returns {Promise<Object>} 처리 결과 통계
-   */
-  async run(batchSize = this.batchSize) {
-    if (this.isRunning) {
-      logger.warn('이미 실행 중입니다.');
-      return { success: false, message: '이미 실행 중입니다.' };
-    }
+  if (this.isRunning) {
+    logger.debug('이미 실행 중입니다.');
+    return { success: false, message: '이미 실행 중입니다.' };
+  }
 
-    this.isRunning = true;
-    this.stats = {
-      processed: 0,
-      isRecruit: 0,
-      notRecruit: 0,
-      failed: 0,
-      saved: 0
-    };
+  this.isRunning = true;
+  this.isCancelled = false;
+  this.stats = {
+    processed: 0,
+    isRecruit: 0,
+    notRecruit: 0,
+    failed: 0,
+    retried: 0,
+    saved: 0,
+    startTime: startTime,
+    endTime: null,
+    runtime: 0
+  };
 
-    try {
-      logger.info(`ParseManager 실행 시작: 배치 크기 ${batchSize}`);
+  try {
+    logger.debug(`ParseManager 실행 시작: 배치 크기 ${batchSize}, 동시성 ${concurrency}`);
+    logger.eventInfo('parse_manager_start', { batchSize, concurrency });
 
-      // 1. 미분류 URL 추출
-      const urls = await this.fetchUnclassifiedUrls(batchSize);
+    // 1. 미분류 URL 추출
+    const fetchStartTime = Date.now();
+    const urls = await this.fetchUnclassifiedUrls(batchSize);
+    const fetchRuntime = Date.now() - fetchStartTime;
 
-      if (urls.length === 0) {
-        logger.info('처리할 미분류 URL이 없습니다.');
-        this.isRunning = false;
-        return {
-          success: true,
-          message: '처리할 미분류 URL이 없습니다.',
-          stats: this.stats
-        };
-      }
+    logger.eventInfo('fetch_unclassified_urls', {
+      count: urls.length,
+      runtime: fetchRuntime
+    });
 
-      logger.info(`${urls.length}개 URL 처리 시작`);
+    if (urls.length === 0) {
+      logger.debug('처리할 미분류 URL이 없습니다.');
+      this.isRunning = false;
 
-      // 2. 각 URL 순차적으로 처리
-      const results = [];
-      for (const urlData of urls) {
-        try {
-          const result = await this.processUrl(urlData);
-          results.push(result);
-
-          // 요청 간 지연 시간
-          await this.wait();
-        } catch (error) {
-          logger.error(`URL 처리 실패 (${urlData.url}):`, error);
-          results.push({
-            url: urlData.url,
-            success: false,
-            error: error.message
-          });
-        }
-      }
-
-      logger.info(`처리 완료: 총 ${this.stats.processed}개, 채용공고 ${this.stats.isRecruit}개, 비채용공고 ${this.stats.notRecruit}개, 실패 ${this.stats.failed}개`);
+      const totalRuntime = Date.now() - startTime;
+      logger.eventInfo('parse_manager_complete', {
+        urls: 0,
+        runtime: totalRuntime,
+        message: '처리할 URL 없음'
+      });
 
       return {
         success: true,
-        message: `${urls.length}개 URL 처리 완료`,
-        stats: this.stats,
-        results
+        message: '처리할 미분류 URL이 없습니다.',
+        stats: this.stats
       };
-    } catch (error) {
-      logger.error('실행 오류:', error);
-      return {
-        success: false,
-        message: `오류 발생: ${error.message}`,
-        error: error.message
-      };
-    } finally {
-      this.isRunning = false;
     }
-  }
 
+    logger.debug(`${urls.length}개 URL 처리 시작`);
+
+    // 2. URL 처리를 위한 작업 대기열 생성
+    const urlQueue = [...urls];
+    const results = [];
+    const pendingPromises = new Set();
+    const processedUrls = new Set();
+
+
+    // 3. 동시 처리를 위한 함수 (재귀 제거)
+    const processNextUrl = async () => {
+      if (this.isCancelled) return null;
+
+      const urlData = urlQueue.shift();
+      if (!urlData) return null;
+
+      // URL이 이미 처리된 경우 건너뛰기
+      if (processedUrls.has(urlData.url)) {
+        return {
+          url: urlData.url,
+          success: false,
+          skipped: true,
+          message: "중복 URL 건너뛰기"
+        };
+      }
+
+      // 처리 시작 전 URL 기록
+      processedUrls.add(urlData.url);
+
+      // 반복문을 사용한 재시도 구현
+      let retryCount = 0;
+
+      while (retryCount <= this.maxRetries) {
+        if (this.isCancelled) {
+          return {
+            url: urlData.url,
+            success: false,
+            cancelled: true,
+            message: "작업이 취소되었습니다"
+          };
+        }
+
+        try {
+          const urlStartTime = Date.now();
+
+          // 재시도 시 로그
+          if (retryCount > 0) {
+            logger.debug(`URL 재시도 중 (${retryCount}/${this.maxRetries}): ${urlData.url}`);
+          }
+
+          // URL 처리 실행
+          const result = await this.processUrl(urlData);
+          const urlRuntime = Date.now() - urlStartTime;
+
+          // 결과에 메타데이터 추가
+          result.runtime = urlRuntime;
+          result.retries = retryCount;
+
+          // 성공 로그
+          logger.eventInfo('process_url_complete', {
+            url: urlData.url,
+            isRecruit: result.isRecruit,
+            success: result.success,
+            runtime: urlRuntime,
+            retries: retryCount
+          });
+
+
+
+          // 성공한 결과 저장 및 반환
+          results.push(result);
+          return result;
+
+        } catch (error) {
+          // 재시도 가능한지 확인
+          if (retryCount < this.maxRetries && !this.isCancelled) {
+            retryCount++;
+            this.stats.retried++;
+
+            // 재시도 간격 계산 (지수 백오프 + 상한 적용)
+            const baseDelay = this.delayBetweenRequests;
+            const maxDelay = 30000; // 최대 30초
+            const retryDelay = Math.min(
+              baseDelay * Math.pow(2, retryCount - 1) + Math.random() * 1000,
+              maxDelay
+            );
+
+            logger.debug(`URL 처리 실패, ${retryDelay}ms 후 재시도 예정 (${retryCount}/${this.maxRetries}): ${urlData.url}`);
+            await this.wait(retryDelay);
+            continue; // 재시도 실행
+          }
+
+          // 최대 재시도 횟수 초과 시 실패 처리
+          logger.error(`URL 처리 실패 (최대 재시도 횟수 초과): ${urlData.url}`, error);
+          logger.eventInfo('process_url_error', {
+            url: urlData.url,
+            error: error.message,
+            retries: retryCount
+          });
+
+          const failedResult = {
+            url: urlData.url,
+            success: false,
+            error: error.message,
+            retries: retryCount
+          };
+
+          // 실패한 결과 저장
+          results.push(failedResult);
+          this.stats.failed++;
+
+
+
+          return failedResult;
+        }
+      }
+
+      return null;
+    };
+
+    // 4. 병렬 처리 실행
+    while (urlQueue.length > 0 && !this.isCancelled) {
+      // 진행 중인 작업이 동시성 제한보다 적으면 새 작업 추가
+      while (pendingPromises.size < concurrency && urlQueue.length > 0) {
+        const promise = processNextUrl().then(result => {
+          pendingPromises.delete(promise);
+          return result;
+        });
+
+        pendingPromises.add(promise);
+
+        // 서버 부하 방지를 위한 짧은 대기
+        await this.wait(50);
+      }
+
+      // 작업 하나가 완료될 때까지 대기
+      if (pendingPromises.size > 0) {
+        await Promise.race([...pendingPromises]);
+      }
+    }
+
+    // 5. 남은 작업 완료 대기
+    if (pendingPromises.size > 0) {
+      logger.debug(`남은 ${pendingPromises.size}개 작업 완료 대기 중...`);
+      await Promise.all([...pendingPromises]);
+    }
+
+
+
+    // 최종 통계 계산
+    this.stats.endTime = Date.now();
+    this.stats.runtime = this.stats.endTime - this.stats.startTime;
+
+    // 처리하지 못한 URL 확인
+    const unprocessedUrls = urls
+      .filter(urlData => !processedUrls.has(urlData.url))
+      .map(urlData => urlData.url);
+
+    // 최종 결과 로깅
+    logger.debug(`처리 완료: 총 ${this.stats.processed}개, 채용공고 ${this.stats.isRecruit}개, 비채용공고 ${this.stats.notRecruit}개, 실패 ${this.stats.failed}개, 재시도 ${this.stats.retried}개`);
+    logger.eventInfo('parse_manager_complete', {
+      urls: urls.length,
+      processed: processedUrls.size,
+      unprocessed: unprocessedUrls.length,
+      runtime: this.stats.runtime,
+      avg_speed: (processedUrls.size / (this.stats.runtime / 1000)).toFixed(2) + " URLs/sec",
+      stats: { ...this.stats }
+    });
+
+    if (unprocessedUrls.length > 0) {
+      logger.debug(`처리되지 않은 URL: ${unprocessedUrls.length}개`);
+    }
+
+    return {
+      success: true,
+      message: `${urls.length}개 URL 처리 완료 (${this.stats.runtime}ms)`,
+      stats: this.stats,
+      results,
+      unprocessedUrls: unprocessedUrls.length > 0 ? unprocessedUrls : undefined
+    };
+  } catch (error) {
+    const failRuntime = Date.now() - startTime;
+    logger.error('실행 오류:', error);
+    logger.eventError('parse_manager_error', {
+      error: error.message,
+      runtime: failRuntime,
+      stack: error.stack
+    });
+
+    return {
+      success: false,
+      message: `오류 발생: ${error.message}`,
+      error: error.message,
+      runtime: failRuntime
+    };
+  } finally {
+    this.isRunning = false;
+  }
+}
+
+    /**
+     * 실행 중인 배치 작업 취소
+     */
+    cancel() {
+      if (!this.isRunning) {
+        return false;
+      }
+
+      logger.debug('배치 처리 작업 취소 중...');
+      this.isCancelled = true;
+      logger.eventInfo('parse_manager_cancel', { stats: { ...this.stats } });
+      return true;
+    }
   /**
    * 현재 상태 정보 반환
    * @returns {Object} 상태 정보
@@ -536,8 +697,8 @@ async processUrl(urlData) {
       }
     };
   }
-}
 
+}
 
 if (require.main === module) {
   (async () => {
@@ -553,9 +714,6 @@ if (require.main === module) {
       const args = process.argv.slice(2);
       const batchSize = parseInt(args[0]) || 10000;
       const delay = parseInt(args[1]) || 1000;
-
-      logger.info('===== 채용공고 파싱 시작 =====');
-      logger.info(`배치 크기: ${batchSize}, 요청 간 지연: ${delay}ms`);
 
       // ParseManager 인스턴스 생성
       const parseManager = new ParseManager({
@@ -573,20 +731,7 @@ if (require.main === module) {
       const endTime = Date.now();
       const elapsedTime = (endTime - startTime) / 1000;
 
-      // 결과 출력
-      if (result.success) {
-        logger.info('===== 채용공고 파싱 완료 =====');
-        logger.info(`소요 시간: ${elapsedTime.toFixed(2)}초`);
-        logger.info('처리 통계:');
-        logger.info(`- 처리된 URL: ${result.stats.processed}개`);
-        logger.info(`- 채용공고: ${result.stats.isRecruit}개`);
-        logger.info(`- 비채용공고: ${result.stats.notRecruit}개`);
-        logger.info(`- 실패: ${result.stats.failed}개`);
-        logger.info(`- 저장됨: ${result.stats.saved}개`);
-      } else {
-        logger.error('===== 채용공고 파싱 실패 =====');
-        logger.error(`오류: ${result.message}`);
-      }
+
 
       process.exit(0);
     } catch (error) {

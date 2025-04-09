@@ -26,17 +26,17 @@ class MongoDBService {
 
     // 연결 이벤트 리스너 설정
     mongoose.connection.on('connected', () => {
-      logger.info('MongoDB 연결 성공');
+      logger.debug('MongoDB 연결 성공');
       this.isConnected = true;
     });
 
     mongoose.connection.on('disconnected', () => {
-      logger.warn('MongoDB 연결이 끊어졌습니다.');
+      logger.debug('MongoDB 연결이 끊어졌습니다.');
       this.isConnected = false;
     });
 
     mongoose.connection.on('error', (err) => {
-      logger.error('MongoDB 연결 오류:', err);
+      logger.debug('MongoDB 연결 오류:', err);
     });
   }
 
@@ -47,7 +47,7 @@ class MongoDBService {
   setUri(uri) {
     this.uri = uri;
     if (this.isConnected) {
-      logger.warn('MongoDB 연결 URI가 변경되었습니다. 연결을 재설정하려면 disconnect() 후 connect()를 호출하세요.');
+      logger.debug('MongoDB 연결 URI가 변경되었습니다. 연결을 재설정하려면 disconnect() 후 connect()를 호출하세요.');
     }
     return this;
   }
@@ -79,7 +79,7 @@ class MongoDBService {
     }
 
     try {
-      logger.info(`MongoDB에 연결 중... URI: ${this.uri}, DB: ${this.dbName}`);
+      logger.debug(`MongoDB에 연결 중... URI: ${this.uri}, DB: ${this.dbName}`);
 
       this.connectionPromise = mongoose.connect(this.uri, {
         dbName: this.dbName,
@@ -112,7 +112,7 @@ class MongoDBService {
     try {
       await mongoose.disconnect();
       this.isConnected = false;
-      logger.info('MongoDB 연결 종료됨');
+      logger.debug('MongoDB 연결 종료됨');
     } catch (error) {
       logger.error('MongoDB 연결 종료 중 오류:', error);
       throw error;
