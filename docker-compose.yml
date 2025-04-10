@@ -70,9 +70,9 @@ services:
       - ./logs:/app/crawl/logs
     environment:
       - PS_NAME=parse
-      - BATCH_SIZE=1000
+      - BATCH_SIZE=10000
       - MAX_RETRIES=3
-      - CONCURRENCY=5
+      - CONCURRENCY=2
     logging:
       driver: "json-file"
       options:

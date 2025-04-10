@@ -20,6 +20,7 @@ class ParseManager {
   constructor(options = {}) {
     this.batchSize = options.batchSize || 10;
     this.maxRetries = options.maxRetries || 3;
+    this.concurrency = options.concurrency || 2;
     this.delayBetweenRequests = options.delayBetweenRequests || 1000;
     this.geminiService = new GeminiService();
     this.isRunning = false;
@@ -416,9 +417,8 @@ async processUrl(urlData) {
  * @param {number} concurrency - 동시 처리할 URL 수 (기본값: 5)
  * @returns {Promise<Object>} 처리 결과 통계
  */
-async run(batchSize = this.batchSize, concurrency = 5) {
+async run(batchSize = this.batchSize ,concurrency=this.concurrency) {
   const startTime = Date.now();
-
   if (this.isRunning) {
     logger.debug('이미 실행 중입니다.');
     return { success: false, message: '이미 실행 중입니다.' };
@@ -589,7 +589,7 @@ async run(batchSize = this.batchSize, concurrency = 5) {
 
       return null;
     };
-
+    logger.debug(`conccurency ${concurrency}`)
     // 4. 병렬 처리 실행
     while (urlQueue.length > 0 && !this.isCancelled) {
       // 진행 중인 작업이 동시성 제한보다 적으면 새 작업 추가
@@ -715,11 +715,13 @@ if (require.main === module) {
       const args = process.argv.slice(2);
       const batchSize = parseInt(args[0]) || parseInt(process.env.BATCH_SIZE);
       const delay = parseInt(args[1]) || 1000;
-
+      const concurrency = parseInt(process.env.CONCURRENCY);
+      logger.eventInfo(`concurrency ${concurrency}`);
       // ParseManager 인스턴스 생성
       const parseManager = new ParseManager({
         batchSize,
-        delayBetweenRequests: delay
+        delayBetweenRequests: delay,
+        concurrency
       });
 
       // 시작 시간 기록
