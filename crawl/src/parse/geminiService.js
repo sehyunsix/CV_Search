@@ -37,7 +37,7 @@ class GeminiService {
     // 현재 사용 중인 API 키
     this.apiKey = this.apiKeys.length > 0 ? this.apiKeys[this.currentKeyIndex] : null;
     //gemini-2.0-flash-exp
-    this.modelName ='gemini-2.0-flash-exp';
+    this.modelName ='gemini-2.0-flash-lite';
 
     // API 키 정보 로깅
     if (this.apiKeys.length > 0) {
@@ -109,7 +109,7 @@ class GeminiService {
 
       // API 키 순환 조건: 한도 초과 에러고, 재시도 횟수가 키 개수보다 적은 경우
       if (isTooManyRequestsError && retryCount < this.apiKeys.length) {
-        logger.warn(`API 한도 초과 감지됨: ${error.message}`);
+        logger.debug(`API 한도 초과 감지됨: ${error.message}`);
 
         // 다음 키로 변경
         if (this.rotateApiKey()) {
