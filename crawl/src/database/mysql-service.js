@@ -39,7 +39,7 @@ class MySqlService {
       const [results] = await this.pool.query(sql, params);
       return results;
     } catch (error) {
-      logger.error('MySQL 쿼리 오류:', error);
+      logger.error('MySQL 쿼리 오류:', { error:error.message });
       throw error;
     }
   }
