@@ -1,6 +1,23 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
+    "target": "es5",
+    "module": "commonjs",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+    "@root": ["."],
+    "@src": ["src"],
+    "@database": ["src/database"],
+    "@crawl": ["src/crawl"],
+    "@utils": ["src/utils"],
+    "@models": ["src/models"],
+    "@server": ["src/server"],
+    "@test": ["test"],
+    "@parse": ["src/parse"],
+    "@config": ["config"]
+
+
+    },
     "outDir": "dist",
     "allowJs": true,          // JS 파일도 포함
     "checkJs": false,         // JS는 타입 검사 안 함 (필요하면 true로)

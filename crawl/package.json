@@ -2,26 +2,27 @@
   "name": "cv_search",
   "version": "1.0.0",
   "description": "스크립트 분석 및 URL 추출 웹 크롤러",
-  "main": "src/index.js",
+  "main": "dist/src/index.js",
   "type": "commonjs",
   "scripts": {
-    "crawl": "node src/crawl/baseWorkerManager",
+    "crawl": "node dist/src/crawl/baseWorkerManager",
     "test": "jest --config=test/__tests__/jest.config.cjs --detectOpenHandles",
-    "seed": "node src/seed/seedGenerator",
-    "server": "node src/server/index",
-    "gemini-parse": "node src/parse/parseToGemini",
-    "claude-parse": "node src/parse/parseToClaude"
+    "seed": "node dist/src/seed/seedGenerator",
+    "server": "node dist/src/server/index",
+    "gemini-parse": "node dist/src/parse/parseToGemini",
+    "claude-parse": "node dist/src/parse/parseToClaude",
+    "docs": "jsdoc -c jsdoc.config.json"
   },
   "_moduleAliases": {
     "@root": ".",
-    "@src": "src",
-    "@database": "src/database",
-    "@crawl": "src/crawl",
-    "@utils": "src/utils",
-    "@models": "src/models",
-    "@server": "src/server",
+    "@src": "dist/src",
+    "@database": "dist/src/database",
+    "@crawl": "dist/src/crawl",
+    "@utils": "dist/src/utils",
+    "@models": "dist/src/models",
+    "@server": "dist/src/server",
     "@test": "test",
-    "@parse": "src/parse",
+    "@parse": "dist/src/parse",
     "@config": "config"
   },
   "dependencies": {
@@ -41,7 +42,10 @@
     "mysql": "^2.18.1",
     "mysql2": "^3.14.0",
     "puppeteer": "^24.4.0",
+    "redis": "^4.7.0",
+    "reflect-metadata": "^0.2.2",
     "robots-parser": "^3.0.1",
+    "typeorm": "^0.3.22",
     "typescript": "^5.8.3"
   },
   "devDependencies": {

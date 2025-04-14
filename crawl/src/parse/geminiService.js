@@ -138,6 +138,10 @@ class GeminiService {
           type: SchemaType.BOOLEAN,
           description: "채용공고인지 여부",
         },
+        location: {
+          type: SchemaType.STRING,
+          description: "회사 위치 및 직무 위치",
+        },
         reason: {
           type: SchemaType.STRING,
           description: "채용공고가 아닌 경우 이유",
@@ -151,10 +155,11 @@ class GeminiService {
           description: "부서",
         },
         experience: {
-          type: SchemaType.STRING,
+          type: SchemaType.ENUM,
+          enum:["경력무관", "신입", "경력"],
           description: "경력 요구사항",
         },
-        description: {
+        job_description: {
           type: SchemaType.STRING,
           description: "직무 설명",
         },
@@ -162,9 +167,16 @@ class GeminiService {
           type: SchemaType.STRING,
           description: "고용 형태",
         },
-        posted_period: {
+        apply_start_date: {
           type: SchemaType.STRING,
-          description: "게시 기간",
+          description: "지원 공고 시작일",
+          format:'date-time'
+        },
+        apply_end_date: {
+          type: SchemaType.STRING,
+          description: "지원 공고 마감일",
+          format:'date-time'
+
         },
         requirements: {
           type: SchemaType.STRING,
