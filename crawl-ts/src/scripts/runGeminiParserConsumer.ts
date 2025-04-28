@@ -4,7 +4,7 @@ import { MongoDbConnector } from '../database/MongoDbConnector';
 import { MysqlRecruitInfoRepository } from '../database/MysqlRecruitInfoRepository';
 import { MongoRecruitInfoRepository } from '../database/MongoRecruitInfoRepository';
 import MessageService, { QueueNames } from '../message/MessageService';
-import { RedisUrlManager } from '../url/RedisUrlManager';
+import { RedisUrlManager, URLSTAUS } from '../url/RedisUrlManager';
 import { ConsumeMessage } from 'amqplib';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRawContent } from '../models/RecruitInfoModel';
@@ -45,11 +45,21 @@ export async function startGeminiParserConsumer(): Promise<void> {
         const result = JSON.parse(msg.content.toString()) as IRawContent;
         logger.debug(result.url);
         const parsedContent = await parser.parseRawContent(result);
-        const dbRecruitInfo = parser.makeDbRecruitInfo( parsedContent,result);
+        let dbRecruitInfo = parser.makeDbRecruitInfo(parsedContent, result);
         // const saved = await this.saveParsedContent(dbRecruitInfo, { destination: 'db' });
-        await parser.recruitInfoRepository.createRecruitInfo(dbRecruitInfo);
-        if (parser.cacheRecruitInfoRepository) {
-          await parser.cacheRecruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+        if (dbRecruitInfo.is_recruit_info === true && dbRecruitInfo.job_description) {
+          await parser.urlManager.setURLStatus(dbRecruitInfo.url, URLSTAUS.HAS_RECRUITINFO);
+          if (dbRecruitInfo.region_id) {
+            dbRecruitInfo.region_id = (await parser.recruitInfoRepository.getRegionIdByCode(dbRecruitInfo.region_id))?.toString();
+            logger.debug(`getRegionIdByCode : ${dbRecruitInfo.region_id}`);
+          }
+          await parser.recruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+          if (parser.cacheRecruitInfoRepository) {
+            await parser.cacheRecruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+          }
+        }
+        else {
+          await parser.urlManager.setURLStatus(dbRecruitInfo.url, URLSTAUS.NO_RECRUITINFO);
         }
       }
     });

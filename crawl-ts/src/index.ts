@@ -28,7 +28,7 @@ function createCrawler(options = {}) {
   const browserManager = new ChromeBrowserManager();
   const contentExtractor = new WebContentExtractor();
   const messageService = new MessageService();
-  const urlManager = new RedisUrlManager();
+  const urlManager = new RedisUrlManager(["toss.im"]);
 
   // 크롤러 인스턴스 생성
   return new WebCrawler({

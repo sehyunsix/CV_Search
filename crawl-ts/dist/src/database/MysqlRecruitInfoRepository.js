@@ -33,13 +33,13 @@ class MysqlRecruitInfoRepository {
                 replacements: { regionCd },
                 type: sequelize_1.QueryTypes.SELECT
             });
-            if (regionResult && regionResult[0] && regionResult[0].id !== undefined) {
-                const region = regionResult[0];
-                logger_1.defaultLogger.info(`지역 코드 ${regionCd}에 해당하는 ID ${region.id}를 찾았습니다.`);
-                return region.id;
+            logger_1.defaultLogger.debug(`쿼리 결과: ${JSON.stringify(regionResult)}`);
+            if (regionResult && regionResult.id !== undefined) {
+                logger_1.defaultLogger.info(`지역 코드 ${regionCd}에 해당하는 ID ${regionResult.id}를 찾았습니다.`);
+                return regionResult.id;
             }
             else {
-                logger_1.defaultLogger.warn(`지역 코드 ${regionCd}에 해당하는 지역 정보를 찾을 수 없습니다.`);
+                logger_1.defaultLogger.warn(`지역 코드 ${regionCd}에 해당하는 ID를 찾을 수 없습니다.`);
                 return null;
             }
         }

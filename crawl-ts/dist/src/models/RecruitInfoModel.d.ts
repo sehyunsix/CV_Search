@@ -128,3 +128,6 @@ export interface ICacheDbRecruitInfo extends IBotRecruitInfo, IRawContent {
 export interface IDbRecruitInfo extends Omit<ICacheDbRecruitInfo, 'is_parse_success' | 'is_recruit_info' | 'is_it_recruit_info'> {
     id?: string;
 }
+export interface RegionResult {
+    id?: number;
+}

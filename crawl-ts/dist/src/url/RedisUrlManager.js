@@ -35,7 +35,7 @@ class RedisUrlManager {
      * RedisUrlManager 생성자
      * @param redisClient Redis 커넥터 인스턴스
      */
-    constructor() {
+    constructor(availableDomains) {
         /**
          * robots.txt 캐시
          */
@@ -57,6 +57,9 @@ class RedisUrlManager {
          */
         this.errorCount = 0;
         this.redisClient = RedisConnector_1.redis;
+        if (availableDomains) {
+            this.availableDomains = availableDomains;
+        }
     }
     /**
       * Connects to the Redis server.
@@ -84,17 +87,16 @@ class RedisUrlManager {
      * @param newStatus 새 상태
      */
     async setURLStatus(url, newStatus) {
-        const urlStatusKey = `status:${this.extractDomain(url)}`;
-        const doaminUrlSetKey = `urls:${this.extractDomain(url)}:`;
+        const domian = this.extractDomain(url);
         try {
-            const oldStatus = await this.redisClient.hGet(urlStatusKey, url);
+            const oldStatus = await this.redisClient.hGet(`status:${domian}`, url);
             if (oldStatus) {
                 await this.redisClient.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
                 await this.redisClient.sRem(`${oldStatus}`, url);
+                await this.redisClient.hSet(`status:${domian}`, url, newStatus);
+                await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
+                await this.redisClient.sAdd(newStatus, url);
             }
-            await this.redisClient.hSet(urlStatusKey, url, newStatus);
-            await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
-            await this.redisClient.sAdd(newStatus, url);
         }
         catch (error) {
             logger_1.defaultLogger.error(`URL 상태 설정 중 오류 (${url}):`, error);
@@ -173,8 +175,7 @@ class RedisUrlManager {
      */
     async getAllDomains() {
         try {
-            const domains = await this.redisClient.sMembers('domains');
-            return domains;
+            return await this.redisClient.sMembers('domains');
         }
         catch (error) {
             logger_1.defaultLogger.error('도메인 목록 가져오기 중 오류:', error);
@@ -220,26 +221,22 @@ class RedisUrlManager {
         }
     }
     /**
-    * Redis Lua 스크립트를 사용하여 특정 도메인에서 'not_visited' 상태인 URL을 가져오고
-    * 상태를 'in_queue'로 원자적으로 업데이트합니다.
+    * Redis transection을 사용해서 원자적으로 업데이트함
+    *
     * @param domain 검색할 도메인
     * @returns URL과 도메인 정보가 포함된 객체 또는 URL이 없을 경우 null
     */
     async getNextUrlFromDomain(domain) {
-        // Lua 스크립트: URL 조회 및 상태 원자적 업데이트
+        const result = await this.redisClient.sPop(`urls:${domain}:${"notvisited" /* URLSTAUS.NOT_VISITED */}`, 1);
         try {
-            // node-redis v4+ 방식으로 스크립트 실행
-            const result = await this.redisClient.sRandMember(`urls:${domain}:${"notvisited" /* URLSTAUS.NOT_VISITED */}`);
-            // await this.redisClient.hSet('url:status',result,'')
-            if (result) {
-                await this.redisClient.sRem(`urls:${domain}:${"notvisited" /* URLSTAUS.NOT_VISITED */}`, result);
-                await this.redisClient.sAdd(`urls:${domain}:${"visited" /* URLSTAUS.VISITED */}`, result);
-                logger_1.defaultLogger.info(`다음 URL: ${result}, 도메인: ${domain}`);
-                return { url: result, domain };
+            if (result.length > 0) {
+                this.setURLStatus(result[0], "visited" /* URLSTAUS.VISITED */);
+                return { url: result[0], domain };
             }
             return null;
         }
         catch (error) {
+            await this.redisClient.sAdd(`urls:${domain}:${"visited" /* URLSTAUS.VISITED */}`, result);
             throw error;
         }
     }

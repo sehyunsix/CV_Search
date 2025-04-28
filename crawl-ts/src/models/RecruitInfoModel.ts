@@ -160,3 +160,7 @@ export interface IDbRecruitInfo extends Omit<ICacheDbRecruitInfo, 'is_parse_succ
   // 특정 필드 재정의 (필요시)
   id? : string
 }
+
+export interface RegionResult{
+  id? : number
+}

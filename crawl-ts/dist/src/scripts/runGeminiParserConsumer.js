@@ -64,11 +64,21 @@ async function startGeminiParserConsumer() {
                 const result = JSON.parse(msg.content.toString());
                 logger_1.defaultLogger.debug(result.url);
                 const parsedContent = await parser.parseRawContent(result);
-                const dbRecruitInfo = parser.makeDbRecruitInfo(parsedContent, result);
+                let dbRecruitInfo = parser.makeDbRecruitInfo(parsedContent, result);
                 // const saved = await this.saveParsedContent(dbRecruitInfo, { destination: 'db' });
-                await parser.recruitInfoRepository.createRecruitInfo(dbRecruitInfo);
-                if (parser.cacheRecruitInfoRepository) {
-                    await parser.cacheRecruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+                if (dbRecruitInfo.is_recruit_info === true && dbRecruitInfo.job_description) {
+                    await parser.urlManager.setURLStatus(dbRecruitInfo.url, "hasRecruitInfo" /* URLSTAUS.HAS_RECRUITINFO */);
+                    if (dbRecruitInfo.region_id) {
+                        dbRecruitInfo.region_id = (await parser.recruitInfoRepository.getRegionIdByCode(dbRecruitInfo.region_id))?.toString();
+                        logger_1.defaultLogger.debug(`getRegionIdByCode : ${dbRecruitInfo.region_id}`);
+                    }
+                    await parser.recruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+                    if (parser.cacheRecruitInfoRepository) {
+                        await parser.cacheRecruitInfoRepository.createRecruitInfo(dbRecruitInfo);
+                    }
+                }
+                else {
+                    await parser.urlManager.setURLStatus(dbRecruitInfo.url, "noRecruitInfo" /* URLSTAUS.NO_RECRUITINFO */);
                 }
             }
         });
