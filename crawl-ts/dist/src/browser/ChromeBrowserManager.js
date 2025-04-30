@@ -52,11 +52,6 @@ class ChromeBrowserManager {
                 timeout: 10000, // 10 seconds
                 protocolTimeout: 20000, // 20 seconds
             });
-            // 브라우저 PID 저장
-            this.browserPID = this.browser.process() ? this.browser.process().pid : null;
-            if (this.browserPID) {
-                logger_1.defaultLogger.debug(`브라우저 프로세스 ID: ${this.browserPID}`);
-            }
             // 프로세스 종료 신호 처리
             const processExit = async () => {
                 logger_1.defaultLogger.debug('프로세스 종료 감지, 브라우저 정리 중...');
@@ -68,6 +63,15 @@ class ChromeBrowserManager {
             process.once('SIGTERM', processExit);
         }
         return this.browser;
+    }
+    /**
+     * 새로운 페이지 생성 후 반환
+     */
+    async getNewPage() {
+        if (!this.browser) {
+            throw new Error("No broswer inialized");
+        }
+        return await this.browser.newPage();
     }
     /**
      * 브라우저 종료
@@ -88,15 +92,15 @@ class ChromeBrowserManager {
                 }));
                 // 브라우저 닫기
                 await this.browser.close();
-                this.browser = null;
                 logger_1.defaultLogger.debug('브라우저가 정상적으로 종료되었습니다.');
             }
             catch (err) {
                 logger_1.defaultLogger.error('브라우저 종료 중 오류:', err);
             }
             finally {
+                await this.browser.close();
                 // Google Chrome for Testing 프로세스 강제 종료
-                this.killChromeProcesses();
+                // this.killChromeProcesses();
             }
         }
     }

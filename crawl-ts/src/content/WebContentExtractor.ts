@@ -214,8 +214,9 @@ export class WebContentExtractor implements IContentExtractor {
   // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
   const redirectedUrls = await Promise.all(
     onclickScripts.map(async (script) => {
-      const tempPage = await page.browser().newPage();
+      let tempPage: Page | undefined = undefined;
       try {
+        tempPage = await page.browser().newPage();
         const html = await page.content();
         await tempPage.setContent(html);
 
@@ -226,9 +227,17 @@ export class WebContentExtractor implements IContentExtractor {
 
       } catch (err) {
         console.error(`Error executing onclick script: ${script}`, err);
+        if (err instanceof Error) {
+          if (err.name === 'ProtocolError' || err.message.includes('timeout')) {
+            logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
+            throw err;
+          }
+        }
         return null;
       } finally {
-        await tempPage.close();
+        if (tempPage) {
+          await tempPage.close();
+        }
       }
     })
   );

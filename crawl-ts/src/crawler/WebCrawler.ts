@@ -4,7 +4,7 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog } from 'puppeteer';
+import { Dialog ,Page ,Browser} from 'puppeteer';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '@url/RedisUrlManager';
@@ -45,6 +45,8 @@ import { URLSTAUS } from '@url/RedisUrlManager';
 
       await this.urlManager.connect();
 
+      await this.browserManager.initBrowser();
+
       logger.debug('크롤러 초기화 완료');
     }
 
@@ -66,25 +68,48 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       herfUrls: [],
       onclickUrls: [],
     });
-
-    let page;
+    let page: Page;
+      try {
+        page = await this.browserManager.getNewPage();
+      } catch (error) {
+        if (error instanceof Error) {
+          logger.error('브라우저 페이지 생성 중 에러', { error: error.message });
+              subUrlResult.success = false;
+                if (error.name === 'ProtocolError' || error.message.includes('Protocol error')) {
+                  logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
+                  subUrlResult.errors.push({
+                    type: 'browser_protocol_error',
+                    message: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined
+                  });
+                  throw error;
+                }
+            }
+            return subUrlResult;
+      }
     try {
-      // 브라우저가 초기화되어 있는지 확인
-      const browser = await this.browserManager.initBrowser();
-
       // 새 페이지 열기
-      page = await browser.newPage();
-
-      // 자바스크립트 대화상자 처리
-      page.on('dialog', async (dialog: Dialog) => {
-        await dialog.dismiss();
-      });
-
-      // 페이지 로드
-      await page.goto(url, {
-        waitUntil: 'networkidle2',
-        timeout: 30000 // 30초
-      });
+      try {
+        // 자바스크립트 대화상자 처리
+        page.on('dialog', async (dialog: Dialog) => {
+          await dialog.dismiss();
+        });
+      } catch(error)
+      {
+        logger.error('다이어로그 처리 중 에러', error);
+        subUrlResult.success = false;
+        return subUrlResult;
+      }
+      try {
+        // 페이지 로드
+        await page.goto(url, {
+          waitUntil: 'networkidle2',
+          timeout: 30000 // 30초
+        });
+      } catch (error) {
+        logger.error('브라우저 페이지 이동 중', error);
+        throw error;
+      }
 
       // 현재 URL 가져오기 (리다이렉트 가능성)
       subUrlResult.finalUrl = page.url();
@@ -123,7 +148,7 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       try {
         // JavaScript 실행을 통한 추가 URL 추출 (onclick 이벤트 등)
         // 이 예제에서는 간소화를 위해 생략하고 빈 배열 할당
-        subUrlResult.onclickUrls = await this.contentExtractor.extractOnclickLinks(page ,[domain]);
+        subUrlResult.onclickUrls = await this.contentExtractor.extractOnclickLinks(page, [domain]);
         logger.debug('JavaScript 이벤트 처리 생략 (간소화된 구현)');
       } catch (error) {
         logger.error('JavaScript 실행 중 오류:', error);
@@ -133,8 +158,8 @@ import { URLSTAUS } from '@url/RedisUrlManager';
           stack: error instanceof Error ? error.stack : undefined,
           url: subUrlResult.finalUrl
         });
+        throw error;
       }
-
       subUrlResult.success = true;
       // console.log(subUrlResult.herfUrls);
       // console.log(subUrlResult.onclickUrls);
@@ -159,8 +184,8 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       return subUrlResult;
     } catch (error) {
 
-      if (!page) {
-        throw error;
+      if (error instanceof Error && (error.name === 'ProtocolError' || error.name === 'TimeoutError' || error.message.includes('Protocol error') || error.message.includes('timeout') || error.message.includes('Timeout'))) {
+            throw error;
       }
       // 오류 정보를 결과 객체에 추가
       subUrlResult.success = false;
@@ -173,10 +198,6 @@ import { URLSTAUS } from '@url/RedisUrlManager';
 
       const runtime = Date.now() - startTime;
       logger.eventError('visit_url', { runtime, error: subUrlResult.error });
-
-      // 에러 스크린샷 저장
-      await this.browserManager.saveErrorScreenshot(page, url);
-
       return subUrlResult;
     }
     finally {
@@ -237,8 +258,6 @@ async processQueue(): Promise<void> {
         // }
       } catch (error) {
         throw error;
-      } finally {
-        await this.browserManager.closeBrowser();
       }
     }
     logger.debug(`큐 처리 완료. 총 ${visitCount}개 URL 방문`);

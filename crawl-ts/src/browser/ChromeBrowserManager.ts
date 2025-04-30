@@ -2,82 +2,95 @@ import { IBrowserManager } from './IBrowserManager';
 import { defaultLogger as logger } from '../utils/logger';
 import CONFIG from '../config/config';
 import { execSync } from 'child_process';
+import { Browser, Page } from 'puppeteer';
+import { Puppeteer } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
-
+import puppeteer from 'puppeteer';
 /**
  * Chrome 브라우저 관리 구현체
  * Puppeteer를 사용하여 Chrome 브라우저를 관리합니다.
  */
 export class ChromeBrowserManager implements IBrowserManager {
-  browser: any;
+  browser?: Browser;
   browserPID?: number;
 
   /**
    * 브라우저 초기화
    * @returns 브라우저 인스턴스
-   */
-  async initBrowser(): Promise<any> {
-    if (!this.browser) {
-      logger.debug(`ChromeBrowserManager 초기화...`);
+   */private isLaunching = false;
 
-      // Puppeteer 동적 임포트 (필요할 때만 로드)
-      const puppeteer = await import('puppeteer');
+// async initBrowser(): Promise<Browser | undefined> {
+//   if (this.browser && this.browser.isConnected()) return this.browser;
 
+//   if (this.isLaunching) {
+//     while (this.isLaunching) {
+//       await new Promise(res => setTimeout(res, 100));
+//     }
+//     return this.browser;
+//   }
+
+//   this.isLaunching = true;
+//   try {
+//     this.browser = await puppeteer.launch({
+//       headless: CONFIG.BROWSER.HEADLESS,
+//       args: CONFIG.BROWSER.LAUNCH_ARGS,
+//       timeout: 10000,
+//     });
+//     return this.browser;
+//   } catch (err) {
+//     logger.error("브라우저 생성 실패", err);
+//     return undefined;
+//   } finally {
+//     this.isLaunching = false;
+//   }
+// }
+async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
+  for (let i = 0; i < retries; i++) {
+    try {
       this.browser = await puppeteer.launch({
-        headless: CONFIG.BROWSER.HEADLESS ? true : false,
+        headless: CONFIG.BROWSER.HEADLESS,
         args: CONFIG.BROWSER.LAUNCH_ARGS,
-        timeout: 10000, // 10 seconds
-        protocolTimeout: 20000, // 20 seconds
+        timeout: 10000,
       });
-
-      // 브라우저 PID 저장
-      this.browserPID = this.browser.process() ? this.browser.process().pid : null;
-      if (this.browserPID) {
-        logger.debug(`브라우저 프로세스 ID: ${this.browserPID}`);
+      return this.browser;
+    } catch (err) {
+      if (err instanceof Error) {
+        logger.warn(`puppeteer.launch() 실패 [시도 ${i + 1}/${retries}]: ${err.message}`);
+        if (i === retries - 1) throw new Error("브라우저 재시도 실패");
+        await new Promise(res => setTimeout(res, delay));
       }
-
-      // 프로세스 종료 신호 처리
-      const processExit = async () => {
-        logger.debug('프로세스 종료 감지, 브라우저 정리 중...');
-        await this.closeBrowser();
-        process.exit(0);
-      };
-
-      // 프로세스 종료 이벤트 리스너 등록
-      process.once('SIGINT', processExit);
-      process.once('SIGTERM', processExit);
     }
-
-    return this.browser;
   }
-
+}
+  /**
+   * 새로운 페이지 생성 후 반환
+   */
+  async getNewPage(): Promise<Page>{
+    if (!this.browser) {
+      throw new Error("No broswer inialized");
+    }
+    return await this.browser.newPage();
+  }
   /**
    * 브라우저 종료
    */
-  async closeBrowser(): Promise<void> {
-    if (this.browser) {
-      logger.debug('브라우저 정리 중...');
-      try {
-        // 모든 페이지 닫기 시도
-        const pages = await this.browser.pages();
-        await Promise.all(pages.map((page: any) => {
-          try { return page.close(); }
-          catch (e) { return Promise.resolve(); }
-        }));
-
-        // 브라우저 닫기
-        await this.browser.close();
-        this.browser = null;
-        logger.debug('브라우저가 정상적으로 종료되었습니다.');
-      } catch (err) {
-        logger.error('브라우저 종료 중 오류:', err);
-      } finally {
-        // Google Chrome for Testing 프로세스 강제 종료
-        this.killChromeProcesses();
+    async closeBrowser(): Promise<void> {
+      if (this.browser) {
+        logger.debug('브라우저 정리 중...');
+        try {
+          await this.browser.close();
+          this.browser = undefined;
+          logger.debug('브라우저가 정상적으로 종료되었습니다.');
+        } catch (err) {
+          logger.error('브라우저 종료 중 오류:', err);
+        } finally {
+          // Google Chrome for Testing 프로세스 강제 종료
+          this.browser = undefined;
+          this.killChromeProcesses();
+        }
       }
     }
-  }
 
   /**
    * Chrome 프로세스 강제 종료

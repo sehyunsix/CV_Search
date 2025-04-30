@@ -26,6 +26,7 @@ class WebCrawler {
         // 데이터베이스 연결
         await this.messageService.connect();
         await this.urlManager.connect();
+        await this.browserManager.initBrowser();
         logger_1.defaultLogger.debug('크롤러 초기화 완료');
     }
     /**
@@ -45,21 +46,32 @@ class WebCrawler {
             herfUrls: [],
             onclickUrls: [],
         });
-        let page;
+        const page = await this.browserManager.getNewPage();
         try {
-            // 브라우저가 초기화되어 있는지 확인
-            const browser = await this.browserManager.initBrowser();
             // 새 페이지 열기
-            page = await browser.newPage();
-            // 자바스크립트 대화상자 처리
-            page.on('dialog', async (dialog) => {
-                await dialog.dismiss();
-            });
-            // 페이지 로드
-            await page.goto(url, {
-                waitUntil: 'networkidle2',
-                timeout: 30000 // 30초
-            });
+            try {
+                // 자바스크립트 대화상자 처리
+                page.on('dialog', async (dialog) => {
+                    await dialog.dismiss();
+                });
+            }
+            catch (error) {
+                logger_1.defaultLogger.error('다이어로그 처리 중 에러', error);
+                subUrlResult.success = false;
+                return subUrlResult;
+            }
+            try {
+                // 페이지 로드
+                await page.goto(url, {
+                    waitUntil: 'networkidle2',
+                    timeout: 30000 // 30초
+                });
+            }
+            catch (error) {
+                logger_1.defaultLogger.error('페이지 이동 중 에러', error);
+                subUrlResult.success = false;
+                return subUrlResult;
+            }
             // 현재 URL 가져오기 (리다이렉트 가능성)
             subUrlResult.finalUrl = page.url();
             // 최종 URL의 도메인 확인
@@ -196,9 +208,6 @@ class WebCrawler {
             }
             catch (error) {
                 throw error;
-            }
-            finally {
-                await this.browserManager.closeBrowser();
             }
         }
         logger_1.defaultLogger.debug(`큐 처리 완료. 총 ${visitCount}개 URL 방문`);

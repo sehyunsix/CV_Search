@@ -7,13 +7,13 @@ exports.createCrawler = createCrawler;
 /**
  * 크롤러 애플리케이션 진입점
  */
-const ChromeBrowserManager_1 = require("./browser/ChromeBrowserManager");
-const WebContentExtractor_1 = require("./content/WebContentExtractor");
-const WebCrawler_1 = require("./crawler/WebCrawler");
-const config_1 = __importDefault(require("./config/config"));
-const logger_1 = require("./utils/logger");
-const MessageService_1 = __importDefault(require("./message/MessageService"));
-const RedisUrlManager_1 = require("./url/RedisUrlManager");
+const ChromeBrowserManager_1 = require("../browser/ChromeBrowserManager");
+const WebContentExtractor_1 = require("../content/WebContentExtractor");
+const WebCrawler_1 = require("../crawler/WebCrawler");
+const config_1 = __importDefault(require("../config/config"));
+const logger_1 = require("../utils/logger");
+const MessageService_1 = __importDefault(require("../message/MessageService"));
+const RedisUrlManager_1 = require("../url/RedisUrlManager");
 /**
  * 크롤러 생성
  * @param options 크롤러 옵션
@@ -64,4 +64,4 @@ if (require.main === module) {
         process.exit(1);
     });
 }
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=runCrawler.js.map

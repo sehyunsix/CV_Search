@@ -1,16 +1,21 @@
 import { IBrowserManager } from './IBrowserManager';
+import { Browser, Page } from 'puppeteer';
 /**
  * Chrome 브라우저 관리 구현체
  * Puppeteer를 사용하여 Chrome 브라우저를 관리합니다.
  */
 export declare class ChromeBrowserManager implements IBrowserManager {
-    browser: any;
+    browser?: Browser;
     browserPID?: number;
     /**
      * 브라우저 초기화
      * @returns 브라우저 인스턴스
      */
     initBrowser(): Promise<any>;
+    /**
+     * 새로운 페이지 생성 후 반환
+     */
+    getNewPage(): Promise<Page>;
     /**
      * 브라우저 종료
      */

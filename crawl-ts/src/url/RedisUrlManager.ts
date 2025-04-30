@@ -332,14 +332,19 @@ export const enum URLSTAUS
      */
     public async addUrl(url: string, domain: string, urlStatus: UrlStatus ): Promise<void> {
       try {
-        // URL을 도메인 세트에 추가
-        await redis.sAdd(`urls:${domain}:${urlStatus}`, url);
-        // status set에 추가
-        await redis.sAdd(URLSTAUS.NOT_VISITED, url);
-        // URL 상태 설정
-        await redis.hSet(`status:${domain}`, url, urlStatus);
-        // 도메인을 전체 도메인 세트에 추가
-        await redis.sAdd('domains', domain);
+        const urlOriginStatus = await redis.hGet(`status:${domain}`, url)
+        // logger.debug(`add URL ${urlOriginStatus}`);
+        if (!urlOriginStatus) {
+          logger.debug(`add URL ${url}`);
+          // URL을 도메인 세트에 추가
+          await redis.sAdd(`urls:${domain}:${urlStatus}`, url);
+          // status set에 추가
+          await redis.sAdd(URLSTAUS.NOT_VISITED, url);
+          // URL 상태 설정
+          await redis.hSet(`status:${domain}`, url, urlStatus);
+          // 도메인을 전체 도메인 세트에 추가
+          await redis.sAdd('domains', domain);
+        }
       } catch (error) {
         console.error(`Error adding URL ${url} to Redis:`, error);
         throw error;

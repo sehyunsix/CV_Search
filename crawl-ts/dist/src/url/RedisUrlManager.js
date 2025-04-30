@@ -325,14 +325,19 @@ class RedisUrlManager {
      */
     async addUrl(url, domain, urlStatus) {
         try {
-            // URL을 도메인 세트에 추가
-            await RedisConnector_1.redis.sAdd(`urls:${domain}:${urlStatus}`, url);
-            // status set에 추가
-            await RedisConnector_1.redis.sAdd("notvisited" /* URLSTAUS.NOT_VISITED */, url);
-            // URL 상태 설정
-            await RedisConnector_1.redis.hSet(`status:${domain}`, url, urlStatus);
-            // 도메인을 전체 도메인 세트에 추가
-            await RedisConnector_1.redis.sAdd('domains', domain);
+            const urlOriginStatus = await RedisConnector_1.redis.hGet(`status:${domain}`, url);
+            // logger.debug(`add URL ${urlOriginStatus}`);
+            if (!urlOriginStatus) {
+                logger_1.defaultLogger.debug(`add URL ${url}`);
+                // URL을 도메인 세트에 추가
+                await RedisConnector_1.redis.sAdd(`urls:${domain}:${urlStatus}`, url);
+                // status set에 추가
+                await RedisConnector_1.redis.sAdd("notvisited" /* URLSTAUS.NOT_VISITED */, url);
+                // URL 상태 설정
+                await RedisConnector_1.redis.hSet(`status:${domain}`, url, urlStatus);
+                // 도메인을 전체 도메인 세트에 추가
+                await RedisConnector_1.redis.sAdd('domains', domain);
+            }
         }
         catch (error) {
             console.error(`Error adding URL ${url} to Redis:`, error);

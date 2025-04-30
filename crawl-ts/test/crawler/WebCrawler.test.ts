@@ -103,6 +103,7 @@ describe('WebCrawler', () => {
     mockBrowserManager = {
       initBrowser: jest.fn().mockResolvedValue(mockBrowser),
       closeBrowser: jest.fn().mockResolvedValue(undefined),
+      getNewPage : jest.fn(),
       killChromeProcesses: jest.fn(),
       saveErrorScreenshot: jest.fn().mockResolvedValue('/path/to/screenshot.png')
     };

@@ -1,3 +1,4 @@
+import { Page,Browser } from 'puppeteer/lib/types';
 /**
  * 브라우저 관리 인터페이스
  * 브라우저 인스턴스의 생성, 제어, 종료를 담당
@@ -8,7 +9,7 @@ export interface IBrowserManager {
    * 브라우저 초기화
    * @returns 브라우저 인스턴스
    */
-  initBrowser(): Promise<any>;
+  initBrowser(): Promise<Browser | undefined>;
 
   /**
    * 브라우저 종료
@@ -19,6 +20,10 @@ export interface IBrowserManager {
    * 남아있는 Chrome 프로세스 강제 종료
    */
   killChromeProcesses(): void;
+ /**
+   * 새로운 페이지 생성 후 반환
+   */
+  getNewPage(): Promise<Page>
 
   /**
    * 오류 발생 시 스크린샷 저장
@@ -26,5 +31,5 @@ export interface IBrowserManager {
    * @param url 대상 URL
    * @returns 저장된 스크린샷 경로 또는 null
    */
-  saveErrorScreenshot(page: any, url: string): Promise<string | null>;
+  saveErrorScreenshot(page: Page, url: string): Promise<string | null>;
 }

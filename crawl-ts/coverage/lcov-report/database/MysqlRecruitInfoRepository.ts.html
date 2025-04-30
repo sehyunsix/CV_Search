@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.59% </span>
+                <span class="strong">89.18% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>35/37</span>
+                <span class='fraction'>33/37</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">84.61% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>11/13</span>
+                <span class='fraction'>9/12</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.59% </span>
+                <span class="strong">89.18% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>35/37</span>
+                <span class='fraction'>33/37</span>
             </div>
         
             
@@ -192,11 +192,12 @@
 <a name='L127'></a><a href='#L127'>127</a>
 <a name='L128'></a><a href='#L128'>128</a>
 <a name='L129'></a><a href='#L129'>129</a>
-<a name='L130'></a><a href='#L130'>130</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -237,12 +238,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -268,7 +269,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -322,11 +326,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Sequelize ,QueryTypes ,Model} from 'sequelize'
-import {  IDbRecruitInfo } from '../models/RecruitInfoModel';
+import {  IDbRecruitInfo ,RegionResult } from '../models/RecruitInfoModel';
 import { MysqlRecruitInfoSequelize } from '../models/MysqlRecruitInfoModel';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
-&nbsp;
 /**
  * MySQL 데이터베이스 서비스 클래스
  * 채용 정보를 MySQL 데이터베이스에 저장하고 관리하는 서비스
@@ -357,22 +360,22 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
     }
 &nbsp;
     try {
-      const [regionResult] = await this.sequelize.query(
+      const [regionResult] : [RegionResult] = await this.sequelize.query(
         'SELECT id FROM regions WHERE cd = :regionCd LIMIT 1',
         {
           replacements: { regionCd },
           type: QueryTypes.SELECT
         }
-      );
+      ) as [RegionResult];
 &nbsp;
-      if (regionResult &amp;&amp; (regionResult as any)[0] &amp;&amp; (regionResult as any)[0].id !== undefined) {
-        const region = (regionResult as any)[0] as { id: number };
-        logger.info(`지역 코드 ${regionCd}에 해당하는 ID ${region.id}를 찾았습니다.`);
-        return region.id;
-      } else {
-        logger.warn(`지역 코드 ${regionCd}에 해당하는 지역 정보를 찾을 수 없습니다.`);
-        return null;
-      }
+      logger.debug(`쿼리 결과: ${JSON.stringify(regionResult)}`);
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (regionResult &amp;&amp; regionResult.id !== undefined) {
+<span class="cstat-no" title="statement not covered" >          logger.info(`지역 코드 ${regionCd}에 해당하는 ID ${regionResult.id}를 찾았습니다.`);</span>
+<span class="cstat-no" title="statement not covered" >          return regionResult.id;</span>
+        } else {
+          logger.warn(`지역 코드 ${regionCd}에 해당하는 ID를 찾을 수 없습니다.`);
+          return null;
+}
     } catch (error) {
       logger.error(`지역 정보 조회 중 오류:`, error);
       return null;
@@ -396,10 +399,13 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
         updated_at: now
       };
 &nbsp;
+&nbsp;
+&nbsp;
       // URL로 기존 데이터 확인
       const existingRecord = await MysqlRecruitInfoSequelize.findOne({
         where: { url: recruitInfo.url }
       });
+&nbsp;
 &nbsp;
       if (existingRecord) {
         // 기존 데이터 업데이트
@@ -457,11 +463,7 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-<<<<<<< HEAD
-                at 2025-04-23T01:39:49.278Z
-=======
-                at 2025-04-23T00:07:22.825Z
->>>>>>> 7b3263fe198854bd6af9701b99ee498c3d812c35
+                at 2025-04-29T13:30:02.438Z
             </div>
         <script src="../prettify.js"></script>
         <script>

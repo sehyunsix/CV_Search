@@ -1,13 +1,13 @@
 /**
  * 크롤러 애플리케이션 진입점
  */
-import { ChromeBrowserManager } from './browser/ChromeBrowserManager';
-import { WebContentExtractor } from './content/WebContentExtractor';
-import { WebCrawler } from './crawler/WebCrawler';
-import CONFIG from './config/config';
-import { defaultLogger as logger } from './utils/logger';
-import MessageService from './message/MessageService';
-import { RedisUrlManager } from './url/RedisUrlManager';
+import { ChromeBrowserManager } from '../browser/ChromeBrowserManager';
+import { WebContentExtractor } from '../content/WebContentExtractor';
+import { WebCrawler } from '../crawler/WebCrawler';
+import CONFIG from '../config/config';
+import { defaultLogger as logger } from '../utils/logger';
+import MessageService from '../message/MessageService';
+import { RedisUrlManager } from '../url/RedisUrlManager';
 
 
 /**
