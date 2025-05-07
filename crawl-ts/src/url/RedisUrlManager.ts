@@ -223,7 +223,7 @@ export const enum URLSTAUS
     * @param domain 검색할 도메인
     * @returns URL과 도메인 정보가 포함된 객체 또는 URL이 없을 경우 null
     */
-      async getNextUrlFromDomain(domain: string): Promise<{ url: string; domain: string } | null> {
+    async getNextUrlFromDomain(domain: string): Promise<{ url: string; domain: string } | null> {
       const result = await this.redisClient.sPop(`urls:${domain}:${URLSTAUS.NOT_VISITED}`,1);
       try {
 
@@ -233,8 +233,8 @@ export const enum URLSTAUS
         }
         return null;
       } catch (error) {
-        await this.redisClient.sAdd(`urls:${domain}:${URLSTAUS.VISITED}`,result);
-        throw error;
+        await this.redisClient.sAdd(`urls:${domain}:${URLSTAUS.VISITED}`, result);
+        return null;
       }
     }
     /**

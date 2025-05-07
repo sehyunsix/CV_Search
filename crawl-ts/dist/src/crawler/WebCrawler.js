@@ -4,6 +4,7 @@ exports.WebCrawler = void 0;
 const VisitResult_1 = require("../models/VisitResult");
 const logger_1 = require("../utils/logger");
 const urlUtils_1 = require("../url/urlUtils");
+const puppeteer_1 = require("puppeteer");
 /**
  * 웹 크롤러 구현체
  * 브라우저, 콘텐츠 추출, URL 관리, DB 연결 컴포넌트를 조합한 크롤러
@@ -46,7 +47,21 @@ class WebCrawler {
             herfUrls: [],
             onclickUrls: [],
         });
-        const page = await this.browserManager.getNewPage();
+        let page;
+        try {
+            page = await this.browserManager.getNewPage();
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                logger_1.defaultLogger.error('브라우저 페이지 생성 중 에러', { error: error.message });
+                subUrlResult.success = false;
+                if (error instanceof puppeteer_1.ProtocolError) {
+                    logger_1.defaultLogger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
+                    throw error;
+                }
+            }
+            return subUrlResult;
+        }
         try {
             // 새 페이지 열기
             try {
@@ -57,8 +72,6 @@ class WebCrawler {
             }
             catch (error) {
                 logger_1.defaultLogger.error('다이어로그 처리 중 에러', error);
-                subUrlResult.success = false;
-                return subUrlResult;
             }
             try {
                 // 페이지 로드
@@ -68,9 +81,8 @@ class WebCrawler {
                 });
             }
             catch (error) {
-                logger_1.defaultLogger.error('페이지 이동 중 에러', error);
-                subUrlResult.success = false;
-                return subUrlResult;
+                logger_1.defaultLogger.error('브라우저 페이지 이동 중', error);
+                throw error;
             }
             // 현재 URL 가져오기 (리다이렉트 가능성)
             subUrlResult.finalUrl = page.url();
@@ -119,6 +131,7 @@ class WebCrawler {
                     stack: error instanceof Error ? error.stack : undefined,
                     url: subUrlResult.finalUrl
                 });
+                throw error;
             }
             subUrlResult.success = true;
             // console.log(subUrlResult.herfUrls);
@@ -141,7 +154,7 @@ class WebCrawler {
             return subUrlResult;
         }
         catch (error) {
-            if (!page) {
+            if (error instanceof Error && (error.name === 'ProtocolError' || error.name === 'TimeoutError' || error.message.includes('Protocol error') || error.message.includes('timeout') || error.message.includes('Timeout'))) {
                 throw error;
             }
             // 오류 정보를 결과 객체에 추가
@@ -154,8 +167,6 @@ class WebCrawler {
             });
             const runtime = Date.now() - startTime;
             logger_1.defaultLogger.eventError('visit_url', { runtime, error: subUrlResult.error });
-            // 에러 스크린샷 저장
-            await this.browserManager.saveErrorScreenshot(page, url);
             return subUrlResult;
         }
         finally {

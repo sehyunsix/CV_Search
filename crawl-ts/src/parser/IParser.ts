@@ -1,7 +1,7 @@
 import { Page } from 'puppeteer';
 import { IDbConnector } from '@database/IDbConnector';
 import { IBotRecruitInfo, IDbRecruitInfo, IRawContent } from '@models/RecruitInfoModel';
-
+import { ConsumeMessage } from 'amqplib';
 /**
  * 파싱 결과 저장 옵션
  */
@@ -69,4 +69,7 @@ export interface IParser {
    * @param rawContent 원본 콘텐츠
    */
   makeDbRecruitInfo(botRecruitInfo: IBotRecruitInfo, rawContent: IRawContent): IDbRecruitInfo;
+
+
+
 }

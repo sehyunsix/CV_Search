@@ -9,6 +9,7 @@ jest.mock('../../src/database/RedisConnector', () => {
     hSet: jest.fn().mockResolvedValue(undefined),
     sAdd: jest.fn().mockResolvedValue(undefined),
     sRem: jest.fn().mockResolvedValue(undefined),
+    sPop: jest.fn(),
     sMembers: jest.fn(),
     sRandMember: jest.fn(),
     exists: jest.fn(),
@@ -129,18 +130,16 @@ describe('RedisUrlManager', () => {
   });
 
   test('should get next URL from domain', async () => {
-    (redis.sRandMember as jest.Mock).mockResolvedValue(testUrl);
+    (redis.sPop as jest.Mock).mockResolvedValue([testUrl]);
 
     const result = await urlManager.getNextUrlFromDomain(testDomain);
 
-    expect(redis.sRandMember).toHaveBeenCalledWith(`urls:${testDomain}:${notVisitedStatus}`);
-    expect(redis.sRem).toHaveBeenCalledWith(`urls:${testDomain}:${notVisitedStatus}`, testUrl);
-    expect(redis.sAdd).toHaveBeenCalledWith(`urls:${testDomain}:${visitedStatus}`, testUrl);
+    expect(redis.sPop).toHaveBeenCalledWith(`urls:${testDomain}:${notVisitedStatus}`,1);
     expect(result).toEqual({ url: testUrl, domain: testDomain });
   });
 
   test('should return null when no next URL is available from domain', async () => {
-    (redis.sRandMember as jest.Mock).mockResolvedValue(null);
+    (redis.sPop as jest.Mock).mockResolvedValue(null);
 
     const result = await urlManager.getNextUrlFromDomain(testDomain);
 
@@ -192,7 +191,7 @@ describe('RedisUrlManager', () => {
     (urlManager as any).currentDomainIndex = 0;
 
     // Mock first domain call - successful
-    (redis.sRandMember as jest.Mock).mockResolvedValueOnce('https://domain1.com/page1');
+    (redis.sPop as jest.Mock).mockResolvedValueOnce(['https://domain1.com/page1']);
 
     // First call should return URL from first domain
     const result1 = await urlManager.getNextUrl();
@@ -200,11 +199,11 @@ describe('RedisUrlManager', () => {
     expect((urlManager as any).currentDomainIndex).toBe(1); // Index should advance
 
     // Mock second domain call - no URLs available
-    (redis.sRandMember as jest.Mock).mockResolvedValueOnce(null);
+    (redis.sPop as jest.Mock).mockResolvedValueOnce(null);
 
     await urlManager.getNextUrl();
     // Mock third domain call - successful
-    (redis.sRandMember as jest.Mock).mockResolvedValueOnce('https://domain3.com/page1');
+    (redis.sPop as jest.Mock).mockResolvedValueOnce(['https://domain3.com/page1']);
 
     // Second call should skip domain2 (no URLs) and return URL from domain3
     const result2 = await urlManager.getNextUrl();

@@ -33,6 +33,7 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
     }
 
     try {
+      logger.debug(`쿼리 시작`);
       const [regionResult] : [RegionResult] = await this.sequelize.query(
         'SELECT id FROM regions WHERE cd = :regionCd LIMIT 1',
         {
@@ -48,7 +49,7 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
         } else {
           logger.warn(`지역 코드 ${regionCd}에 해당하는 ID를 찾을 수 없습니다.`);
           return null;
-}
+        }
     } catch (error) {
       logger.error(`지역 정보 조회 중 오류:`, error);
       return null;

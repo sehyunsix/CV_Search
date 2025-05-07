@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebContentExtractor = void 0;
 const logger_1 = require("../utils/logger");
 const urlUtils_1 = require("../url/urlUtils");
+const puppeteer_1 = require("puppeteer");
 /**
  * 웹 콘텐츠 추출 구현체
  * 페이지에서 콘텐츠와 링크를 추출합니다.
@@ -187,8 +188,9 @@ class WebContentExtractor {
         console.debug(onclickScripts);
         // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
         const redirectedUrls = await Promise.all(onclickScripts.map(async (script) => {
-            const tempPage = await page.browser().newPage();
+            let tempPage = undefined;
             try {
+                tempPage = await page.browser().newPage();
                 const html = await page.content();
                 await tempPage.setContent(html);
                 await tempPage.evaluate(script);
@@ -198,10 +200,16 @@ class WebContentExtractor {
             }
             catch (err) {
                 console.error(`Error executing onclick script: ${script}`, err);
+                if (err instanceof puppeteer_1.ProtocolError || err instanceof puppeteer_1.TimeoutError) {
+                    logger_1.defaultLogger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
+                    throw err;
+                }
                 return null;
             }
             finally {
-                await tempPage.close();
+                if (tempPage) {
+                    await tempPage.close();
+                }
             }
         }));
         return Array.from(new Set(redirectedUrls.filter((url) => !!url && allowedDomains.some(domain => url.includes(domain)))));

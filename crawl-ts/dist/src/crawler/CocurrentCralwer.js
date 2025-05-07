@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConcurrentWebCrawler = void 0;
 const logger_1 = require("../utils/logger");
+const puppeteer_1 = require("puppeteer");
 class ConcurrentWebCrawler {
     constructor(crawler, concurrency = 4) {
         this.crawler = crawler;
@@ -49,10 +50,21 @@ class ConcurrentWebCrawler {
             }
             catch (error) {
                 logger_1.defaultLogger.error(`[작업자 ${workerId}] 오류 발생:`, error);
-                throw new Error("작업자 브라우저 에러 발생");
+                if (error instanceof puppeteer_1.ProtocolError || error instanceof puppeteer_1.TimeoutError) {
+                    logger_1.defaultLogger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
+                    await this.crawler.browserManager.closeBrowser();
+                    const broswer = await this.crawler.browserManager.initBrowser();
+                    if (!broswer) {
+                        throw new Error("브라우저가 초기화되지 않았습니다.");
+                    }
+                    continue;
+                }
+                continue;
+            }
+            finally {
+                logger_1.defaultLogger.debug(`[작업자 ${workerId}] 완료. 총 ${visitCount}개 URL 방문`);
             }
         }
-        logger_1.defaultLogger.debug(`[작업자 ${workerId}] 완료. 총 ${visitCount}개 URL 방문`);
     }
 }
 exports.ConcurrentWebCrawler = ConcurrentWebCrawler;

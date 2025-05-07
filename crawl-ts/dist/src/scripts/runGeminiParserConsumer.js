@@ -66,7 +66,7 @@ async function startGeminiParserConsumer() {
                 const parsedContent = await parser.parseRawContent(result);
                 let dbRecruitInfo = parser.makeDbRecruitInfo(parsedContent, result);
                 // const saved = await this.saveParsedContent(dbRecruitInfo, { destination: 'db' });
-                if (dbRecruitInfo.is_recruit_info === true && dbRecruitInfo.job_description) {
+                if (dbRecruitInfo.is_recruit_info === true && dbRecruitInfo.job_description && dbRecruitInfo.company_name && dbRecruitInfo.title) {
                     await parser.urlManager.setURLStatus(dbRecruitInfo.url, "hasRecruitInfo" /* URLSTAUS.HAS_RECRUITINFO */);
                     if (dbRecruitInfo.region_id) {
                         dbRecruitInfo.region_id = (await parser.recruitInfoRepository.getRegionIdByCode(dbRecruitInfo.region_id))?.toString();

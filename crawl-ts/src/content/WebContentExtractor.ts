@@ -1,7 +1,7 @@
 import { IContentExtractor } from './IContentExtractor';
 import { defaultLogger as logger } from '../utils/logger';
 import { isUrlAllowed } from '../url/urlUtils';
-import { Page } from 'puppeteer';
+import { Page ,ProtocolError, TimeoutError } from 'puppeteer';
 
 /**
  * 웹 콘텐츠 추출 구현체
@@ -227,11 +227,9 @@ export class WebContentExtractor implements IContentExtractor {
 
       } catch (err) {
         console.error(`Error executing onclick script: ${script}`, err);
-        if (err instanceof Error) {
-          if (err.name === 'ProtocolError' || err.message.includes('timeout')) {
+        if (err instanceof ProtocolError || err instanceof TimeoutError) {
             logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
             throw err;
-          }
         }
         return null;
       } finally {

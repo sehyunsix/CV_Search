@@ -29,6 +29,7 @@ class MysqlRecruitInfoRepository {
             throw new Error('데이터베이스 연결이 초기화되지 않았습니다.');
         }
         try {
+            logger_1.defaultLogger.debug(`쿼리 시작`);
             const [regionResult] = await this.sequelize.query('SELECT id FROM regions WHERE cd = :regionCd LIMIT 1', {
                 replacements: { regionCd },
                 type: sequelize_1.QueryTypes.SELECT

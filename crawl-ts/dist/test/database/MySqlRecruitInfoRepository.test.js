@@ -6,17 +6,6 @@ const sequelize_1 = require("sequelize");
 // Mock Sequelize and MysqlRecruitInfoSequelize
 jest.mock('sequelize');
 jest.mock('../../src/models/MysqlRecruitInfoModel');
-jest.mock('../../src/utils/logger', () => {
-    return {
-        defaultLogger: {
-            debug: jest.fn(),
-            info: jest.fn(),
-            warn: jest.fn(),
-            error: jest.fn(),
-            eventInfo: jest.fn()
-        }
-    };
-});
 describe('MysqlRecruitInfoRepository', () => {
     let repository;
     let mockSequelize;
@@ -24,9 +13,11 @@ describe('MysqlRecruitInfoRepository', () => {
     beforeEach(() => {
         // Reset all mocks
         jest.clearAllMocks();
-        // Set up mock for Sequelize
         mockSequelize = {
-            query: jest.fn(),
+            query: jest.fn().mockImplementation(() => {
+                // 기본적으로 빈 결과 배열과 null 메타데이터를 반환
+                return Promise.resolve([[], null]);
+            })
         };
         // Set up mock for MysqlRecruitInfoSequelize
         mockRecruitInfoModel = {
@@ -40,10 +31,10 @@ describe('MysqlRecruitInfoRepository', () => {
     describe('getRegionIdByCode', () => {
         test('should return region id when region code exists', async () => {
             // Mock the result from sequelize query with the format expected by the updated method
-            const mockRegionResult = [{
-                    id: 123
-                }];
-            mockSequelize.query.mockResolvedValue([mockRegionResult, []]);
+            const mockRegionResult = {
+                id: 123
+            };
+            mockSequelize.query.mockResolvedValue([mockRegionResult, null]);
             // Call the method
             const result = await repository.getRegionIdByCode('1000000000');
             // Verify the query was called with correct parameters

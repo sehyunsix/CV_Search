@@ -4,10 +4,11 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog ,Page ,Browser} from 'puppeteer';
+import { Dialog ,Page ,Browser ,ProtocolError} from 'puppeteer';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '@url/RedisUrlManager';
+import { TimeoutError } from 'sequelize/types';
 
   /**
    * 웹 크롤러 구현체
@@ -63,25 +64,17 @@ import { URLSTAUS } from '@url/RedisUrlManager';
     let subUrlResult = new SubUrl({
       url: url,
       domain: domain,
-      visited: true,
       visitedAt: new Date(),
-      herfUrls: [],
-      onclickUrls: [],
     });
     let page: Page;
-      try {
+    try {
         page = await this.browserManager.getNewPage();
-      } catch (error) {
+    } catch (error) {
         if (error instanceof Error) {
           logger.error('브라우저 페이지 생성 중 에러', { error: error.message });
               subUrlResult.success = false;
-                if (error.name === 'ProtocolError' || error.message.includes('Protocol error')) {
+                if (error instanceof ProtocolError ) {
                   logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
-                  subUrlResult.errors.push({
-                    type: 'browser_protocol_error',
-                    message: error instanceof Error ? error.message : String(error),
-                    stack: error instanceof Error ? error.stack : undefined
-                  });
                   throw error;
                 }
             }
@@ -97,14 +90,12 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       } catch(error)
       {
         logger.error('다이어로그 처리 중 에러', error);
-        subUrlResult.success = false;
-        return subUrlResult;
       }
       try {
         // 페이지 로드
         await page.goto(url, {
           waitUntil: 'networkidle2',
-          timeout: 30000 // 30초
+          timeout: 20000 // 20초
         });
       } catch (error) {
         logger.error('브라우저 페이지 이동 중', error);
@@ -184,7 +175,7 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       return subUrlResult;
     } catch (error) {
 
-      if (error instanceof Error && (error.name === 'ProtocolError' || error.name === 'TimeoutError' || error.message.includes('Protocol error') || error.message.includes('timeout') || error.message.includes('Timeout'))) {
+      if (error instanceof ProtocolError || error instanceof TimeoutError) {
             throw error;
       }
       // 오류 정보를 결과 객체에 추가

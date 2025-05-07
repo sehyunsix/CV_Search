@@ -1,10 +1,5 @@
 import { Sequelize ,DataTypes ,Model} from 'sequelize'
 import { IDbRecruitInfo } from '../models/RecruitInfoModel';
-
-
-
-
-
 /**
  * Sequelize 모델 정의를 위한 인터페이스
  * (creationAttributes에 사용됨)

@@ -1,4 +1,4 @@
-import { Page } from 'puppeteer/lib/types';
+import { Page, Browser } from 'puppeteer/lib/types';
 /**
  * 브라우저 관리 인터페이스
  * 브라우저 인스턴스의 생성, 제어, 종료를 담당
@@ -8,7 +8,7 @@ export interface IBrowserManager {
      * 브라우저 초기화
      * @returns 브라우저 인스턴스
      */
-    initBrowser(): Promise<any>;
+    initBrowser(): Promise<Browser | undefined>;
     /**
      * 브라우저 종료
      */

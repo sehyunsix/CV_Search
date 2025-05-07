@@ -10,8 +10,8 @@ export declare class ChromeBrowserManager implements IBrowserManager {
     /**
      * 브라우저 초기화
      * @returns 브라우저 인스턴스
-     */
-    initBrowser(): Promise<any>;
+     */ private isLaunching;
+    initBrowser(retries?: number, delay?: number): Promise<Browser | undefined>;
     /**
      * 새로운 페이지 생성 후 반환
      */
