@@ -1,6 +1,6 @@
 import { Sequelize ,QueryTypes ,Model} from 'sequelize'
 import {  IDbRecruitInfo ,RegionResult } from '../models/RecruitInfoModel';
-import { MysqlRecruitInfoSequelize } from '../models/MysqlRecruitInfoModel';
+import { MysqlRecruitInfoSequelize  ,mysqlRecruitInfoSequelize} from '../models/MysqlRecruitInfoModel';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 /**
@@ -10,18 +10,6 @@ import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
   private recruitInfoModel?: Model
   private sequelize?: Sequelize
-
-  /**
-   * MySQL 서비스 생성자
-   * @param recruitInfoModel 채용 정보 모델
-   * @param sequelize Sequelize 인스턴스
-   */
-  constructor(recruitInfoModel: Model, sequelize : Sequelize ) {
-    // 모델 초기화
-    this.recruitInfoModel = recruitInfoModel;
-    this.sequelize = sequelize;
-  }
-
   /**
    * 지역 코드에 해당하는 ID 조회
    * @param regionCd 지역 코드
@@ -72,8 +60,6 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
         created_at: now,
         updated_at: now
       };
-
-
 
       // URL로 기존 데이터 확인
       const existingRecord = await MysqlRecruitInfoSequelize.findOne({

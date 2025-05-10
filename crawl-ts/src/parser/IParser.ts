@@ -27,28 +27,6 @@ export interface SaveParsedContentOptions {
  * 모든 파서 구현체가 구현해야 하는 인터페이스
  */
 export interface IParser {
-  /**
-   * 파서 초기화
-   * @param options 초기화 옵션
-   */
-
-
-
-  dbConnector: IDbConnector;
-
-  cacheDbConner?: IDbConnector;
-
-
-  initialize(options?: Record<string, any>): Promise<boolean>;
-  /**
-   * Parser 시작
-   *
-   */
-  run(): Promise<() => void>;
-  /**
-   * 파서 이름 반환
-   */
-  getName(): string;
 
   /**
    * 원본 콘텐츠 로드
@@ -60,7 +38,7 @@ export interface IParser {
    * 원본 콘텐츠를 파싱하여 채용 정보 추출
    * @param rawContent 원본 콘텐츠
    */
-  parseRawContent(rawContent: IRawContent): Promise<IBotRecruitInfo>;
+  parseRawContentRetry(rawContent: IRawContent, retryNumber: number): Promise<IBotRecruitInfo | undefined>;
 
 
   /**

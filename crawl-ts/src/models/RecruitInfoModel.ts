@@ -127,6 +127,7 @@ export interface IBotRecruitInfo extends IGeminiResponseRecruitInfo {
   // 추가 필드가 필요하면 여기에 정의
 }
 
+export class BotRecruitInfo implements IBaseRecruitInfo{}
 /**
  * DB에 저장되는 채용 정보 인터페이스
  */
@@ -164,3 +165,5 @@ export interface IDbRecruitInfo extends Omit<ICacheDbRecruitInfo, 'is_parse_succ
 export interface RegionResult{
   id? : number
 }
+
+
