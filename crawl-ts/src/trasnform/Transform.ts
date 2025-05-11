@@ -1,6 +1,7 @@
-import { Logger, defaultLogger as logger } from '../utils/logger';
 import regions from '../../static/regions.json';
-import { GeminiParser } from '../parser/GeminiParser';
+
+export const OTHER_REGION_ID = 283
+export const OTHER_COUNTY_ID = 282
 
 // const parser = new GeminiParser();
 const cdToRegionMap = createCdToRegionMap(regions);

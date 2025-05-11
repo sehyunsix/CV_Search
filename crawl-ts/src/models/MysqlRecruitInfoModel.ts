@@ -54,8 +54,6 @@ export class MysqlJobRegionSequelize extends Model {
   public id!: number;
   public job_id!: number;
   public region_id!: number;
-  public created_at!: Date;
-  public updated_at!: Date;
 }
 
 
@@ -181,23 +179,12 @@ MysqlJobRegionSequelize.init({
   region_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
+  }
+
 }, {
   sequelize: mysqlRecruitInfoSequelize,
   tableName: process.env.MYSQL_JOB_REGION_TABLE,
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  timestamps: false,
 })
 
 

@@ -17,23 +17,23 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
    * @returns 저장된 채용 정보 객체
    */
   async createRecruitInfo(recruitInfo: CreateDBRecruitInfoDTO ): Promise<CreateDBRecruitInfoDTO|null> {
-    try {
       // 현재 시간
-      const now = new Date();
-
-      // 데이터 준비 (region_id는 아직 처리하지 않음)
-      let recruitData = {
-        ...recruitInfo,
-        created_at: now,
-        updated_at: now
+    const transaction = await MysqlRecruitInfoSequelize.sequelize!.transaction();
+    try {
+      const [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitInfo, { transaction });
+      if (recruitInfo.region_id) {
+        for (const region_id of recruitInfo.region_id) {
+          await MysqlJobRegionSequelize.upsert({
+            job_id: record.id,
+            region_id: region_id
+          }, { transaction });
+        }
       }
-
-      // URL로 기존 데이터 확인
-      const [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitData);
-      logger.debug(created?'🔵 새로 생성된 데이터:':'🟡 기존 데이터 업데이트됨:'+`${record.id}`);
+      await transaction.commit();
       return record;
 
     } catch (error) {
+      await transaction.rollback();
       logger.error('채용 정보 저장 중 오류:', error);
       throw error;
     }

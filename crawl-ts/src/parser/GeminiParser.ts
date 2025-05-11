@@ -12,7 +12,7 @@ import { QueueNames } from '../message/MessageService';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { defaultLogger as logger } from '../utils/logger';
-import { cd2RegionId, regionText2RegionIds } from '../trasnform/Transform';
+import { cd2RegionId, OTHER_REGION_ID, regionText2RegionIds } from '../trasnform/Transform';
 
 
 // --- 상수 ---
@@ -419,10 +419,16 @@ export class GeminiParser implements IParser {
             if (!data.job_type) { data.job_type = "무관" }
             if (!data.require_experience) { data.require_experience = "경력무관" }
             if (!data.title) { data.title = rawContent.title }
-            if (rawContent.text && !data.region_id) { data.region_id = regionText2RegionIds(rawContent.text) }
+            if (!data.region_id) { data.region_id = [] }
             if (rawContent.text && data.region_id) {
               data.region_id = data.region_id.map((regionCd) => cd2RegionId(regionCd)).filter((regionId) => regionId !== undefined);
-             }
+            }
+            if (data.region_text) {
+              data.region_id.concat(regionText2RegionIds(data.region_text || ''));
+            }
+            if (data.region_id.length === 0) {
+              data.region_id =[OTHER_REGION_ID]
+            }
             return data
           })
           .catch(
