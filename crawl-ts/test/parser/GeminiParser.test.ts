@@ -1,7 +1,6 @@
 import 'dotenv/config'
 import { GeminiParser } from '../../src/parser/GeminiParser';
 import { defaultLogger as logger } from '../../src/utils/logger'
-import { IBotRecruitInfo,BotRecruitInfo } from '@models/RecruitInfoModel';
 import mongoose from 'mongoose';
 
 describe("Gemini Parser Test", () => {

@@ -2,15 +2,17 @@ import {
   GoogleGenerativeAI,
   Schema,
   SchemaType,
-  GenerativeModel
+
 } from '@google/generative-ai';
 import { IParser } from './IParser';
-import {  IBotRecruitInfo, ICacheDbRecruitInfo, IDbRecruitInfo, IRawContent, RegionResult } from '../models/RecruitInfoModel';
+import { CreateCacheDBRecruitInfoDTO,  GeminiResponseRecruitInfoDTO } from '../models/RecruitInfoModel';
+import { IRawContent } from '../models/RawContentModel';
 import { VisitResultModel } from '../models/VisitResult';
 import { QueueNames } from '../message/MessageService';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { defaultLogger as logger } from '../utils/logger';
+import { cd2RegionId, regionText2RegionIds } from '../trasnform/Transform';
 
 
 // --- 상수 ---
@@ -45,6 +47,11 @@ const geminiRegionCdScema = {
           type: SchemaType.BOOLEAN,
           description: "분석된 텍스트가 IT 채용공고인지 여부 (true=IT채용공고, false=IT채용공고 아님)",
         },
+        title: {
+          type: SchemaType.STRING,
+          description: "채용 공고 제목",
+          nullable: true
+        },
         company_name: {
           type: SchemaType.STRING,
           description: "회사명",
@@ -57,20 +64,25 @@ const geminiRegionCdScema = {
         },
         region_text: {
           type: SchemaType.STRING,
-          description: "근무 지역 또는 회사 위치",
+          description: "근무 지역 또는 회사 위치 (예: 서울시 강남구)",
           nullable: true
         },
         region_id: {
-          type: SchemaType.STRING,
+          type: SchemaType.ARRAY,
           description: "근무 지역 또는 회사 위치의 대한민국 법정동 코드(예 서울시 강남구=1168000000 )",
-          nullable: true
+          minItems: 0,
+          maxItems: 4,
+          items: {
+            type: SchemaType.STRING,
+          },
+          nullable: false
         },
         require_experience: {
           type: SchemaType.STRING,
           enum: ['경력무관', '신입', '경력'],
           format: "enum",
           description: "요구되는 경력 수준 (경력무관, 신입, 경력)",
-          nullable: true
+          nullable: false
         },
         job_description: {
           type: SchemaType.STRING,
@@ -151,15 +163,17 @@ function geminiRecruitInfoPrompt(content : string) {
    - "is_recruit_info" 필드를 true로 설정하세요.
    - 다음 정보를 추출하여 해당 필드에 입력하세요. 정보가 없다면 null이나 빈 문자열로 설정하세요.
      - is_it_recruit_info: it 직군의 채용정보 이라면 true , 아니라면 false 로 설정하세요 (채용공고인 동시에 IT직군이여야합니다.)
+     - title: 적절한 채용 공고 제목을 작성하세요. (예: "토스 프론트엔드 개발자 채용") 회사명과 직무를 포함하세요.
      - company_name: 채용하는 회사명
      - department: 채용하는 부서 또는 팀
-     - region_text: 근무 지역 또는 회사 위치
-     - region_id: region_text의 값을 대한민국 법정동 코드 (예)서울시 강남구일 경우 1168000000)로 정규화해서 넣어줘.
+     - region_text: 근무 지역 또는 회사 위치 시도구 기준으로 한국어로 작성하세요. 여러 지역이 있다면 쉼표로 구분하세요. 예) 서울시 강남구, 경기도 성남시 분당구
+     - region_id: region_text의 값을 대한민국 법정동 코드로 변환하세요 경기 안산시, 안산시 상록구 => [4127000000 ,4127100000]
      - require_experience: 요구되는 경력 수준 ("경력무관", "신입", "경력"). 가능하면 이 세 가지 카테고리로 매핑해주세요.
      - job_description: 주요 업무 내용이나 직무기술서에 대한 내용을 기술하세요.
      - job_type: 고용 형태. 표준 용어를 사용하세요 (정규직, 계약직, 인턴, 아르바이트, 프리랜서, 파견직).만약 여러가지라면 /로 구분해서 작성해주세요(예 정규직/피견직)
-     - apply_start_date: 지원 시작일 또는 게시일 (가능한 YYYY-MM-DD 형식)
-     - apply_end_date: 지원 마감일 (가능한 YYYY-MM-DD 형식, 또는 "상시채용", "채용시 마감" 등)
+       나와있지 않은 고용형태는 "무관"으로 설정하세요.
+     - apply_start_date: 지원 시작일 또는 게시일 (가능한 YYYY-MM-DD 형식으로 맞추어주세요)
+     - apply_end_date: 지원 마감일 (가능한 YYYY-MM-DD 형식으로 맞추어주세요)
      - requirements: 필수 자격 요건
      - preferred_qualifications: 우대 사항
      - ideal_candidate: 회사가 찾는 인재상
@@ -351,12 +365,25 @@ export class GeminiParser implements IParser {
         }
       }
     }
+    }
+  parseDateOrNull(dateStr: any): Date | undefined {
+    try {
+      const parsed = new Date(dateStr);
+      if (parsed < new Date('2000-01-01') || parsed > new Date('2100-12-31')) {
+        return undefined;
+      }
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    }catch (error) {
+      logger.error(`날짜 파싱 중 오류 발생: ${error}`);
+      return undefined;
+    }
+
   }
-  /**
+  /**x
   * 원본 콘텐츠 파싱
   * @param rawContent 원본 콘텐츠
   */
-  async parseRawContentRetry(rawContent: IRawContent, retryNumber: number ,retryDelay: number=1000 ): Promise<IBotRecruitInfo | undefined> {
+  async parseRawContentRetry(rawContent: IRawContent, retryNumber: number ,retryDelay: number=1000 ): Promise<GeminiResponseRecruitInfoDTO | undefined> {
     for (let attempt = 1; attempt <= retryNumber; attempt++) {
       try {
         const model = new GoogleGenerativeAI(this.apiKeyGenerator.next().value).getGenerativeModel({
@@ -383,7 +410,20 @@ export class GeminiParser implements IParser {
               logger.error(`Gemini API에서 빈 응답을 받았습니다.${attempt}/${retryNumber}`);
               throw new ParseError('Gemini API에서 빈 응답을 받았습니다.');
             }
-            return JSON.parse(responseText) as IBotRecruitInfo
+
+            const data = JSON.parse(responseText) as GeminiResponseRecruitInfoDTO
+
+            // API 응답 유효성 처리
+            data.apply_end_date = this.parseDateOrNull(data.apply_end_date);
+            data.apply_start_date = this.parseDateOrNull(data.apply_start_date);
+            if (!data.job_type) { data.job_type = "무관" }
+            if (!data.require_experience) { data.require_experience = "경력무관" }
+            if (!data.title) { data.title = rawContent.title }
+            if (rawContent.text && !data.region_id) { data.region_id = regionText2RegionIds(rawContent.text) }
+            if (rawContent.text && data.region_id) {
+              data.region_id = data.region_id.map((regionCd) => cd2RegionId(regionCd)).filter((regionId) => regionId !== undefined);
+             }
+            return data
           })
           .catch(
             (error) => {
@@ -405,22 +445,22 @@ export class GeminiParser implements IParser {
       }
     }
   }
-  /**
-   * DB 저장용 모델로 변환
-   * @param botRecruitInfo 봇 파싱 결과
-   * @param rawContent 원본 콘텐츠
-   */
-  makeDbRecruitInfo(botRecruitInfo: IBotRecruitInfo, rawContent: IRawContent): ICacheDbRecruitInfo {
-    const now = new Date();
-    return {
-      ...botRecruitInfo,
-      is_parse_success: true,
-      ...rawContent,
-      created_at: now,
-      updated_at: now,
-      is_public: true, // 채용 정보인 경우에만 공개
-    };
-  }
+  // /**
+  //  * DB 저장용 모델로 변환
+  //  * @param botRecruitInfo 봇 파싱 결과
+  //  * @param rawContent 원본 콘텐츠
+  //  */
+  // makeDbRecruitInfo(botRecruitInfo: GeminiResponseRecruitInfoDTO, rawContent: IRawContent): CreateCacheDBRecruitInfoDTO {
+  //   const now = new Date();
+  //   return {
+  //     ...botRecruitInfo,
+  //     is_parse_success: true,
+  //     ...rawContent,
+  //     created_at: now,
+  //     updated_at: now,
+  //     is_public: true, // 채용 정보인 경우에만 공개
+  //   };
+  // }
 }
 
 
