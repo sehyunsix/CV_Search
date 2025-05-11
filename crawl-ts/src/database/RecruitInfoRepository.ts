@@ -29,7 +29,6 @@ class RecruitInfoRepository implements IRecruitInfoRepository {
     //region_text to region_id
     // mysql qeury 날리기
     // redis qeury 날리기
-
     // mongodb qeury 날리기
 
   }
