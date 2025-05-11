@@ -3,7 +3,7 @@
     "total": 1185,
     "korean_count": 300,
     "english_count": 885,
-    "korean_with_region_ids": 167
+    "korean_with_region_ids": 218
   },
   "details": [
     {
@@ -125,6 +125,7 @@
       "region_ids": [
         1,
         26,
+        26,
         30,
         46,
         56,
@@ -168,7 +169,8 @@
       "region_text": "분당, 서울, 춘천, 세종",
       "region_ids": [
         1,
-        83
+        83,
+        246
       ],
       "lang": "ko"
     },
@@ -198,6 +200,8 @@
         84,
         95,
         95,
+        95,
+        117,
         117,
         117
       ],
@@ -207,6 +211,7 @@
       "region_text": "경기 군포시",
       "region_ids": [
         84,
+        117,
         117,
         117
       ],
@@ -219,7 +224,9 @@
     },
     {
       "region_text": "서초",
-      "region_ids": [],
+      "region_ids": [
+        23
+      ],
       "lang": "ko"
     },
     {
@@ -227,7 +234,22 @@
       "region_ids": [
         54,
         65,
-        84
+        84,
+        95,
+        102,
+        103,
+        105,
+        117,
+        126,
+        129,
+        137,
+        153,
+        171,
+        199,
+        248,
+        249,
+        268,
+        269
       ],
       "lang": "ko"
     },
@@ -236,13 +258,17 @@
       "region_ids": [
         1,
         17,
+        17,
         29,
+        39,
         39,
         47,
         62,
         67,
         74,
+        127,
         245,
+        257,
         257
       ],
       "lang": "ko"
@@ -2342,7 +2368,9 @@
     },
     {
       "region_text": "영주",
-      "region_ids": [],
+      "region_ids": [
+        201
+      ],
       "lang": "ko"
     },
     {
@@ -2362,6 +2390,7 @@
     {
       "region_text": "경상북도 경주시",
       "region_ids": [
+        197,
         197
       ],
       "lang": "ko"
@@ -2379,7 +2408,8 @@
     {
       "region_text": "제주",
       "region_ids": [
-        242
+        242,
+        243
       ],
       "lang": "ko"
     },
@@ -2396,6 +2426,7 @@
       "region_ids": [
         193,
         213,
+        213,
         213
       ],
       "lang": "ko"
@@ -2403,6 +2434,7 @@
     {
       "region_text": "원주시",
       "region_ids": [
+        247,
         247
       ],
       "lang": "ko"
@@ -2411,6 +2443,8 @@
       "region_text": "충청북도 청주시 흥덕구 옥산면",
       "region_ids": [
         137,
+        137,
+        140,
         140
       ],
       "lang": "ko"
@@ -2426,14 +2460,16 @@
     {
       "region_text": "경남 양산",
       "region_ids": [
-        218
+        218,
+        231
       ],
       "lang": "ko"
     },
     {
       "region_text": "경남 양산",
       "region_ids": [
-        218
+        218,
+        231
       ],
       "lang": "ko"
     },
@@ -2441,13 +2477,17 @@
       "region_text": "파주/의왕/광주/울산",
       "region_ids": [
         65,
-        77
+        77,
+        118,
+        124,
+        129
       ],
       "lang": "ko"
     },
     {
       "region_text": "충청남도 청양군",
       "region_ids": [
+        166,
         166
       ],
       "lang": "ko"
@@ -2460,18 +2500,23 @@
     {
       "region_text": "칠곡경북대학교병원",
       "region_ids": [
-        193
+        193,
+        213
       ],
       "lang": "ko"
     },
     {
       "region_text": "칠곡",
-      "region_ids": [],
+      "region_ids": [
+        213
+      ],
       "lang": "ko"
     },
     {
       "region_text": "김해국제공항",
-      "region_ids": [],
+      "region_ids": [
+        228
+      ],
       "lang": "ko"
     },
     {
@@ -3051,7 +3096,10 @@
     },
     {
       "region_text": "서산 / 평택",
-      "region_ids": [],
+      "region_ids": [
+        103,
+        159
+      ],
       "lang": "ko"
     },
     {
@@ -3063,8 +3111,11 @@
       "region_text": "강서구 화곡동, 금천구 가산동",
       "region_ids": [
         17,
+        17,
+        19,
         19,
         29,
+        39,
         39,
         47,
         62,
@@ -3075,7 +3126,9 @@
     },
     {
       "region_text": "해운대백병원점",
-      "region_ids": [],
+      "region_ids": [
+        36
+      ],
       "lang": "ko"
     },
     {
@@ -3087,10 +3140,15 @@
       "region_text": "가평군/남양주시/춘천시/강원/원주시",
       "region_ids": [
         114,
+        114,
         130,
+        130,
+        134,
         134,
         245,
         246,
+        246,
+        247,
         247
       ],
       "lang": "ko"
@@ -3099,15 +3157,21 @@
       "region_text": "평택시 팽성읍/종로구 세종로/분당구 백현동/서초구 잠원동/송파구 신천동/강남구 도곡동/용산구 이태원동/강남구 신사동",
       "region_ids": [
         2,
+        2,
+        4,
         4,
         23,
+        23,
         24,
+        24,
+        25,
         25,
         34,
         48,
         68,
         79,
         83,
+        103,
         103
       ],
       "lang": "ko"
@@ -3115,8 +3179,15 @@
     {
       "region_text": "서초동, 상암점, 반곡동, 구미동, 대동, 천연동, 이문동, 번동, 마포점, 제주이도점, 수내정자점, 노형점, 달동점, 공릉점, 계룡점, 고잔점, 과천점, 서방배점, 야탑점, 경주시, 일원점",
       "region_ids": [
+        15,
+        23,
+        112,
+        161,
         197,
-        242
+        197,
+        200,
+        242,
+        243
       ],
       "lang": "ko"
     },
@@ -3135,6 +3206,7 @@
       "region_ids": [
         84,
         103,
+        103,
         103
       ],
       "lang": "ko"
@@ -3142,8 +3214,11 @@
     {
       "region_text": "가평읍/우두동/다산동/춘천시/강원 원주시",
       "region_ids": [
+        134,
         245,
         246,
+        246,
+        247,
         247,
         247
       ],
@@ -3159,6 +3234,7 @@
       "region_ids": [
         84,
         124,
+        124,
         124
       ],
       "lang": "ko"
@@ -3171,6 +3247,7 @@
     {
       "region_text": "마포구 서교동",
       "region_ids": [
+        15,
         15
       ],
       "lang": "ko"
@@ -3185,6 +3262,7 @@
       "region_ids": [
         84,
         125,
+        125,
         125
       ],
       "lang": "ko"
@@ -3192,6 +3270,7 @@
     {
       "region_text": "의정부시 녹양동",
       "region_ids": [
+        94,
         94
       ],
       "lang": "ko"
@@ -3199,18 +3278,23 @@
     {
       "region_text": "평택시 팽성읍",
       "region_ids": [
+        103,
         103
       ],
       "lang": "ko"
     },
     {
       "region_text": "영등포역점, 영통본점, 수원영통본점, 수지구청점, 향남1지구점, 한양대점",
-      "region_ids": [],
+      "region_ids": [
+        20,
+        85
+      ],
       "lang": "ko"
     },
     {
       "region_text": "은평구",
       "region_ids": [
+        13,
         13
       ],
       "lang": "ko"
@@ -3219,14 +3303,19 @@
       "region_text": "금천구 가산동/영등포구 양평동/강서구 화곡동",
       "region_ids": [
         17,
+        17,
+        19,
         19,
         20,
+        20,
         29,
+        39,
         39,
         47,
         62,
         67,
-        74
+        74,
+        135
       ],
       "lang": "ko"
     },
@@ -3234,7 +3323,10 @@
       "region_text": "고양시 덕양구",
       "region_ids": [
         108,
-        109
+        108,
+        109,
+        109,
+        260
       ],
       "lang": "ko"
     },
@@ -3268,6 +3360,7 @@
     {
       "region_text": "군산시",
       "region_ids": [
+        268,
         268
       ],
       "lang": "ko"
@@ -3275,10 +3368,18 @@
     {
       "region_text": "대구, 울산, 광주, 화곡동, 분당, 안성, 기흥, 이천, 세종, 파주, 해운대, 기장, 영등포, 강남",
       "region_ids": [
+        20,
+        24,
+        36,
+        43,
         44,
         65,
         77,
-        83
+        83,
+        124,
+        125,
+        126,
+        129
       ],
       "lang": "ko"
     },
@@ -3288,6 +3389,8 @@
         1,
         7,
         7,
+        7,
+        116,
         116,
         264
       ],
@@ -3299,10 +3402,14 @@
         84,
         114,
         114,
+        114,
+        130,
         130,
         245,
         246,
         246,
+        246,
+        247,
         247,
         247
       ],
@@ -3315,8 +3422,12 @@
         84,
         102,
         102,
+        102,
+        115,
         115,
         119,
+        119,
+        124,
         124
       ],
       "lang": "ko"
@@ -3354,7 +3465,8 @@
         56,
         66,
         72,
-        80
+        80,
+        146
       ],
       "lang": "ko"
     },
@@ -3369,6 +3481,8 @@
         1,
         5,
         5,
+        5,
+        7,
         7,
         7,
         30,
@@ -3380,8 +3494,12 @@
         84,
         94,
         94,
+        94,
+        105,
         105,
         107,
+        107,
+        201,
         201
       ],
       "lang": "ko"
@@ -3389,6 +3507,7 @@
     {
       "region_text": "세종로/신천동/팽성읍/이태원동/도곡동/백현동",
       "region_ids": [
+        2,
         83
       ],
       "lang": "ko"
@@ -3399,12 +3518,17 @@
         84,
         114,
         114,
+        114,
         130,
+        130,
+        134,
         134,
         134,
         245,
         246,
         246,
+        246,
+        247,
         247,
         247
       ],
@@ -3417,7 +3541,9 @@
     },
     {
       "region_text": "건대점, 하남점",
-      "region_ids": [],
+      "region_ids": [
+        119
+      ],
       "lang": "ko"
     },
     {
@@ -3433,8 +3559,11 @@
     {
       "region_text": "광주, 마포, 인천, 해운대",
       "region_ids": [
+        15,
+        36,
         54,
-        65
+        65,
+        129
       ],
       "lang": "ko"
     },
@@ -3445,47 +3574,65 @@
     },
     {
       "region_text": "천안 2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "천안",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -3495,7 +3642,9 @@
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -3510,7 +3659,8 @@
     {
       "region_text": "전국, 청주, 부산",
       "region_ids": [
-        27
+        27,
+        137
       ],
       "lang": "ko"
     },
@@ -3518,6 +3668,7 @@
       "region_text": "서울특별시 마포구",
       "region_ids": [
         1,
+        15,
         15
       ],
       "lang": "ko"
@@ -3531,13 +3682,16 @@
     },
     {
       "region_text": "구미병원",
-      "region_ids": [],
+      "region_ids": [
+        200
+      ],
       "lang": "ko"
     },
     {
       "region_text": "전라남도, 광주광역시",
       "region_ids": [
-        65
+        65,
+        129
       ],
       "lang": "ko"
     },
@@ -3550,6 +3704,7 @@
       "region_text": "서울특별시 강남구",
       "region_ids": [
         1,
+        24,
         24,
         34,
         48,
@@ -3568,17 +3723,6 @@
       "region_ids": [
         1,
         24,
-        34,
-        48,
-        68,
-        79
-      ],
-      "lang": "ko"
-    },
-    {
-      "region_text": "서울특별시 강남구",
-      "region_ids": [
-        1,
         24,
         34,
         48,
@@ -3592,17 +3736,6 @@
       "region_ids": [
         1,
         24,
-        34,
-        48,
-        68,
-        79
-      ],
-      "lang": "ko"
-    },
-    {
-      "region_text": "서울특별시 강남구",
-      "region_ids": [
-        1,
         24,
         34,
         48,
@@ -3615,6 +3748,33 @@
       "region_text": "서울특별시 강남구",
       "region_ids": [
         1,
+        24,
+        24,
+        34,
+        48,
+        68,
+        79
+      ],
+      "lang": "ko"
+    },
+    {
+      "region_text": "서울특별시 강남구",
+      "region_ids": [
+        1,
+        24,
+        24,
+        34,
+        48,
+        68,
+        79
+      ],
+      "lang": "ko"
+    },
+    {
+      "region_text": "서울특별시 강남구",
+      "region_ids": [
+        1,
+        24,
         24,
         34,
         48,
@@ -3633,17 +3793,6 @@
       "region_ids": [
         1,
         24,
-        34,
-        48,
-        68,
-        79
-      ],
-      "lang": "ko"
-    },
-    {
-      "region_text": "서울특별시 강남구",
-      "region_ids": [
-        1,
         24,
         34,
         48,
@@ -3657,17 +3806,6 @@
       "region_ids": [
         1,
         24,
-        34,
-        48,
-        68,
-        79
-      ],
-      "lang": "ko"
-    },
-    {
-      "region_text": "서울특별시 강남구",
-      "region_ids": [
-        1,
         24,
         34,
         48,
@@ -3680,6 +3818,33 @@
       "region_text": "서울특별시 강남구",
       "region_ids": [
         1,
+        24,
+        24,
+        34,
+        48,
+        68,
+        79
+      ],
+      "lang": "ko"
+    },
+    {
+      "region_text": "서울특별시 강남구",
+      "region_ids": [
+        1,
+        24,
+        24,
+        34,
+        48,
+        68,
+        79
+      ],
+      "lang": "ko"
+    },
+    {
+      "region_text": "서울특별시 강남구",
+      "region_ids": [
+        1,
+        24,
         24,
         34,
         48,
@@ -5237,6 +5402,7 @@
       "region_text": "경기도 과천시",
       "region_ids": [
         84,
+        112,
         112
       ],
       "lang": "ko"
@@ -5262,8 +5428,10 @@
       "region_text": "부산광역시 강서구",
       "region_ids": [
         17,
+        17,
         27,
         29,
+        39,
         39,
         47,
         62,
@@ -5274,7 +5442,9 @@
     },
     {
       "region_text": "스타필드 하남점",
-      "region_ids": [],
+      "region_ids": [
+        119
+      ],
       "lang": "ko"
     },
     {
@@ -5292,6 +5462,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5301,7 +5473,10 @@
       "region_ids": [
         1,
         120,
-        137
+        120,
+        137,
+        137,
+        265
       ],
       "lang": "ko"
     },
@@ -5329,7 +5504,9 @@
     },
     {
       "region_text": "한강/파주",
-      "region_ids": [],
+      "region_ids": [
+        124
+      ],
       "lang": "ko"
     },
     {
@@ -5342,6 +5519,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5350,18 +5529,23 @@
       "region_text": "강원특별자치도 원주시",
       "region_ids": [
         245,
+        247,
         247
       ],
       "lang": "ko"
     },
     {
       "region_text": "스타필드 하남점",
-      "region_ids": [],
+      "region_ids": [
+        119
+      ],
       "lang": "ko"
     },
     {
       "region_text": "김해국제공항",
-      "region_ids": [],
+      "region_ids": [
+        228
+      ],
       "lang": "ko"
     },
     {
@@ -5369,6 +5553,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5378,6 +5564,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5391,7 +5579,9 @@
     },
     {
       "region_text": "천안1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -5403,13 +5593,16 @@
       "region_text": "경기도 과천시",
       "region_ids": [
         84,
+        112,
         112
       ],
       "lang": "ko"
     },
     {
       "region_text": "낙동강/영주",
-      "region_ids": [],
+      "region_ids": [
+        201
+      ],
       "lang": "ko"
     },
     {
@@ -5420,7 +5613,8 @@
     {
       "region_text": "경기 이천",
       "region_ids": [
-        84
+        84,
+        125
       ],
       "lang": "ko"
     },
@@ -5429,6 +5623,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5437,6 +5633,7 @@
       "region_text": "경기도 과천시",
       "region_ids": [
         84,
+        112,
         112
       ],
       "lang": "ko"
@@ -5450,7 +5647,9 @@
     },
     {
       "region_text": "스타필드 하남점",
-      "region_ids": [],
+      "region_ids": [
+        119
+      ],
       "lang": "ko"
     },
     {
@@ -5458,20 +5657,26 @@
       "region_ids": [
         84,
         90,
+        90,
         93,
+        93,
+        128,
         128
       ],
       "lang": "ko"
     },
     {
       "region_text": "천안 1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "서울시 마포구",
       "region_ids": [
         1,
+        15,
         15
       ],
       "lang": "ko"
@@ -5488,7 +5693,9 @@
     },
     {
       "region_text": "LF 스퀘어몰 광양점",
-      "region_ids": [],
+      "region_ids": [
+        175
+      ],
       "lang": "ko"
     },
     {
@@ -5513,6 +5720,7 @@
     {
       "region_text": "과천시",
       "region_ids": [
+        112,
         112
       ],
       "lang": "ko"
@@ -5522,6 +5730,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5531,6 +5741,7 @@
       "region_ids": [
         264,
         270,
+        270,
         270
       ],
       "lang": "ko"
@@ -5539,6 +5750,7 @@
       "region_text": "서울특별시 성북구",
       "region_ids": [
         1,
+        9,
         9,
         35,
         49,
@@ -5557,7 +5769,10 @@
       "region_ids": [
         84,
         90,
+        90,
         93,
+        93,
+        128,
         128
       ],
       "lang": "ko"
@@ -5570,7 +5785,8 @@
     {
       "region_text": "광주",
       "region_ids": [
-        65
+        65,
+        129
       ],
       "lang": "ko"
     },
@@ -5601,6 +5817,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5615,6 +5833,7 @@
     {
       "region_text": "부천시",
       "region_ids": [
+        98,
         98
       ],
       "lang": "ko"
@@ -5626,7 +5845,10 @@
     },
     {
       "region_text": "창원 또는 의왕",
-      "region_ids": [],
+      "region_ids": [
+        118,
+        219
+      ],
       "lang": "ko"
     },
     {
@@ -5650,7 +5872,9 @@
     },
     {
       "region_text": "전주 지역",
-      "region_ids": [],
+      "region_ids": [
+        265
+      ],
       "lang": "ko"
     },
     {
@@ -5684,13 +5908,16 @@
     },
     {
       "region_text": "[영섬/나주]",
-      "region_ids": [],
+      "region_ids": [
+        174
+      ],
       "lang": "ko"
     },
     {
       "region_text": "경기도 안성시",
       "region_ids": [
         84,
+        126,
         126
       ],
       "lang": "ko"
@@ -5705,7 +5932,8 @@
     {
       "region_text": "경남 양산",
       "region_ids": [
-        218
+        218,
+        231
       ],
       "lang": "ko"
     },
@@ -5723,7 +5951,9 @@
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -5742,6 +5972,7 @@
       "region_text": "대전광역시 유성구",
       "region_ids": [
         71,
+        75,
         75
       ],
       "lang": "ko"
@@ -5753,7 +5984,9 @@
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -5761,13 +5994,17 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
     },
     {
       "region_text": "오산",
-      "region_ids": [],
+      "region_ids": [
+        115
+      ],
       "lang": "ko"
     },
     {
@@ -5779,13 +6016,16 @@
       "region_text": "경기도 과천시",
       "region_ids": [
         84,
+        112,
         112
       ],
       "lang": "ko"
     },
     {
       "region_text": "서산",
-      "region_ids": [],
+      "region_ids": [
+        159
+      ],
       "lang": "ko"
     },
     {
@@ -5804,6 +6044,7 @@
       "region_text": "강원특별자치도 원주시",
       "region_ids": [
         245,
+        247,
         247
       ],
       "lang": "ko"
@@ -5812,6 +6053,7 @@
       "region_text": "대전광역시 유성구",
       "region_ids": [
         71,
+        75,
         75
       ],
       "lang": "ko"
@@ -5838,19 +6080,23 @@
       "region_text": "강원도 춘천시 동면",
       "region_ids": [
         245,
+        246,
         246
       ],
       "lang": "ko"
     },
     {
       "region_text": "천안2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
       "region_text": "대전광역시 유성구",
       "region_ids": [
         71,
+        75,
         75
       ],
       "lang": "ko"
@@ -5859,6 +6105,7 @@
       "region_text": "서울특별시 서초구",
       "region_ids": [
         1,
+        23,
         23
       ],
       "lang": "ko"
@@ -5868,6 +6115,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5891,12 +6140,16 @@
     },
     {
       "region_text": "양주",
-      "region_ids": [],
+      "region_ids": [
+        130
+      ],
       "lang": "ko"
     },
     {
       "region_text": "청양",
-      "region_ids": [],
+      "region_ids": [
+        166
+      ],
       "lang": "ko"
     },
     {
@@ -5953,6 +6206,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -5960,13 +6215,16 @@
     {
       "region_text": "제주",
       "region_ids": [
-        242
+        242,
+        243
       ],
       "lang": "ko"
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -5984,6 +6242,7 @@
       "region_ids": [
         264,
         270,
+        270,
         270
       ],
       "lang": "ko"
@@ -5992,6 +6251,7 @@
       "region_text": "인천광역시 미추홀구 관교동",
       "region_ids": [
         54,
+        57,
         57
       ],
       "lang": "ko"
@@ -6000,6 +6260,7 @@
       "region_text": "경기도 과천시",
       "region_ids": [
         84,
+        112,
         112
       ],
       "lang": "ko"
@@ -6011,7 +6272,9 @@
     },
     {
       "region_text": "낙동강/거제",
-      "region_ids": [],
+      "region_ids": [
+        230
+      ],
       "lang": "ko"
     },
     {
@@ -6019,7 +6282,9 @@
       "region_ids": [
         1,
         84,
-        218
+        218,
+        219,
+        225
       ],
       "lang": "ko"
     },
@@ -6040,7 +6305,9 @@
     },
     {
       "region_text": "무안",
-      "region_ids": [],
+      "region_ids": [
+        186
+      ],
       "lang": "ko"
     },
     {
@@ -6048,6 +6315,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -6066,7 +6335,9 @@
     },
     {
       "region_text": "용산점/신세계본점/도곡점/AK분당점/서면점",
-      "region_ids": [],
+      "region_ids": [
+        4
+      ],
       "lang": "ko"
     },
     {
@@ -6084,6 +6355,7 @@
       "region_ids": [
         1,
         9,
+        9,
         35,
         49,
         69,
@@ -6099,18 +6371,22 @@
     {
       "region_text": "경상북도 영주시",
       "region_ids": [
+        201,
         201
       ],
       "lang": "ko"
     },
     {
       "region_text": "[낙동강/영주]",
-      "region_ids": [],
+      "region_ids": [
+        201
+      ],
       "lang": "ko"
     },
     {
       "region_text": "경상북도 영주시",
       "region_ids": [
+        201,
         201
       ],
       "lang": "ko"
@@ -6120,6 +6396,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -6144,6 +6422,7 @@
     {
       "region_text": "충청북도 청주시",
       "region_ids": [
+        137,
         137
       ],
       "lang": "ko"
@@ -6178,6 +6457,8 @@
       "region_text": "충청북도 청주시 흥덕구 옥산면 과학산업4로 79-44",
       "region_ids": [
         137,
+        137,
+        140,
         140
       ],
       "lang": "ko"
@@ -6221,7 +6502,9 @@
     },
     {
       "region_text": "천안1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -6270,6 +6553,7 @@
       "region_text": "서울특별시 서대문구",
       "region_ids": [
         1,
+        14,
         14
       ],
       "lang": "ko"
@@ -6289,13 +6573,16 @@
     {
       "region_text": "영섬/광주",
       "region_ids": [
-        65
+        65,
+        129
       ],
       "lang": "ko"
     },
     {
       "region_text": "천안 1/2공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -6313,6 +6600,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -6321,6 +6610,7 @@
       "region_text": "경기도 의정부시",
       "region_ids": [
         84,
+        94,
         94
       ],
       "lang": "ko"
@@ -6334,6 +6624,7 @@
       "region_text": "강원도 원주시",
       "region_ids": [
         245,
+        247,
         247
       ],
       "lang": "ko"
@@ -6355,13 +6646,16 @@
     },
     {
       "region_text": "순천 지역",
-      "region_ids": [],
+      "region_ids": [
+        173
+      ],
       "lang": "ko"
     },
     {
       "region_text": "서울특별시 성북구",
       "region_ids": [
         1,
+        9,
         9,
         35,
         49,
@@ -6384,7 +6678,9 @@
     },
     {
       "region_text": "정읍",
-      "region_ids": [],
+      "region_ids": [
+        270
+      ],
       "lang": "ko"
     },
     {
@@ -6405,7 +6701,8 @@
     {
       "region_text": "경남 양산",
       "region_ids": [
-        218
+        218,
+        231
       ],
       "lang": "ko"
     },
@@ -6419,6 +6716,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -6427,6 +6726,7 @@
       "region_text": "강원특별자치도 원주시",
       "region_ids": [
         245,
+        247,
         247
       ],
       "lang": "ko"
@@ -6442,19 +6742,24 @@
       "region_text": "충청북도 청주시 흥덕구 옥산면 과학산업4로 79-44",
       "region_ids": [
         137,
+        137,
+        140,
         140
       ],
       "lang": "ko"
     },
     {
       "region_text": "원주",
-      "region_ids": [],
+      "region_ids": [
+        247
+      ],
       "lang": "ko"
     },
     {
       "region_text": "강원도 원주시",
       "region_ids": [
         245,
+        247,
         247
       ],
       "lang": "ko"
@@ -6464,6 +6769,8 @@
       "region_ids": [
         84,
         90,
+        90,
+        93,
         93
       ],
       "lang": "ko"
@@ -6495,7 +6802,9 @@
     },
     {
       "region_text": "천안 1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {
@@ -6503,6 +6812,8 @@
       "region_ids": [
         264,
         265,
+        265,
+        267,
         267
       ],
       "lang": "ko"
@@ -6543,7 +6854,9 @@
     },
     {
       "region_text": "금강/보령",
-      "region_ids": [],
+      "region_ids": [
+        157
+      ],
       "lang": "ko"
     },
     {
@@ -6560,7 +6873,9 @@
     },
     {
       "region_text": "천안 1공장",
-      "region_ids": [],
+      "region_ids": [
+        153
+      ],
       "lang": "ko"
     },
     {

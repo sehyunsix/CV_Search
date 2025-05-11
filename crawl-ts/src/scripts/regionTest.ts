@@ -36,17 +36,22 @@ async function processRegionTexts() {
     else englishCount++;
 
     logger.debug(`[regionTranform] ${region_text} 파싱중...`);
-    const regionIds = await regionText2RegionIdsAi(region_text);
-    if (lang === 'ko' && regionIds.length > 0) {
-      koreanWithRegionIds++;
+    const tasks: Promise<number[]> [] = [];
+    for (let i = 0; i < 3; i++) {
+       regionText2RegionIdsAi(region_text).then((regionIds) => {
+        if (lang === 'ko' && regionIds.length > 0) {
+          koreanWithRegionIds++;
+        }
+        results.push({
+          region_text: region_text,
+          region_ids: regionIds,
+          lang,
+        });
+      })
+      tasks.push()
     }
+  };
 
-    results.push({
-      region_text: region_text,
-      region_ids: regionIds,
-      lang,
-    });
-  }
 
   const summary = {
     total: regionTexts.length,
