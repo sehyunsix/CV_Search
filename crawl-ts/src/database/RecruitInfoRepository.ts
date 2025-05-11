@@ -1,39 +1,43 @@
-import { IBaseRecruitInfo } from '@models/RecruitInfoModel';
+import { CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
-import { MysqlRecruitInfoRepository } from '@database/MysqlRecruitInfoRepository';
-import { MongoRecruitInfoRepository } from './MongoRecruitInfoRepository';
-import { RedisUrlManager } from '@url/RedisUrlManager';
+import { MysqlRecruitInfoRepository } from './MysqlRecruitInfoRepository';
+import { RedisUrlManager, URLSTAUS } from '../url/RedisUrlManager';
 
-class RecruitInfoRepository implements IRecruitInfoRepository {
+export class RecruitInfoRepository implements IRecruitInfoRepository {
 
   private mysqlRepository: MysqlRecruitInfoRepository;
-  private mongoDBRepository: MongoRecruitInfoRepository;
   private urlManager: RedisUrlManager;
 
 
   constructor() {
 
-    this.mongoDBRepository = new MongoRecruitInfoRepository();
     this.mysqlRepository = new MysqlRecruitInfoRepository();
     this.urlManager = new RedisUrlManager();
   }
 
   async initialize() {
-    await this.mongoDBRepository.connect();
     await this.urlManager.connect();
   }
 
-  createRecruitInfo(recruitInfo: IBaseRecruitInfo): Promise<IBaseRecruitInfo | null> {
+  async createRecruitInfo(recruitInfo: CreateDBRecruitInfoDTO): Promise<Boolean> {
 
-    //날짜 유효성 검증
-    //region_text to region_id
-    // mysql qeury 날리기
-    // redis qeury 날리기
-    // mongodb qeury 날리기
-
-  }
-
-  updateRecruitInfo(recruitInfo: IBaseRecruitInfo): Promise<IBaseRecruitInfo | null> {
+    return await this.mysqlRepository.createRecruitInfo(recruitInfo).then(
+      (result) => {
+        if(!result) { throw new Error('Failed to create recruit info'); }
+        return this.urlManager.setURLStatus(result.url, URLSTAUS.HAS_RECRUITINFO)
+      }
+    )
+    .catch((error) => {
+      console.error('Error creating recruit info:', error);
+      throw error;
+    })
+    .then(() => {
+      return true;
+    })
+    .catch((error) => {
+      console.error('Error setting URL status:', error);
+      throw error;
+    })
 
   }
 

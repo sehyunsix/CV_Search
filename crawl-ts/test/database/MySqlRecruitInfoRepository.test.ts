@@ -1,10 +1,6 @@
 import 'dotenv/config';
 import { MysqlRecruitInfoRepository } from '../../src/database/MysqlRecruitInfoRepository';
-
-
-
-
-describe('getRegionIdByCode', () => {
+describe('Mysql Repository 테스트', () => {
 
     let repository: MysqlRecruitInfoRepository;
 
@@ -18,10 +14,10 @@ describe('getRegionIdByCode', () => {
         const recruitInfo = {
           title: 'Test Job',
           company_name: 'Test Company',
-          url: 'https://example.com/job/123',
+          url: 'https://example.com/job/124',
           text: 'Job description',
           job_description: 'Job description',
-          job_type: '정규직',
+          job_type: '정규직/계약직',
           is_public: true,
           is_parse_success: true,
           is_it_recruit_info: true,

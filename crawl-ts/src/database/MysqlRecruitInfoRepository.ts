@@ -16,21 +16,27 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
    * @param recruitInfo 저장할 채용 정보 객체
    * @returns 저장된 채용 정보 객체
    */
-  async createRecruitInfo(recruitInfo: CreateDBRecruitInfoDTO ): Promise<CreateDBRecruitInfoDTO|null> {
+  async createRecruitInfo(recruitInfo: CreateDBRecruitInfoDTO ): Promise<CreateDBRecruitInfoDTO> {
       // 현재 시간
     const transaction = await MysqlRecruitInfoSequelize.sequelize!.transaction();
     try {
-      const [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitInfo, { transaction });
-      if (recruitInfo.region_id) {
+      let record: CreateDBRecruitInfoDTO|null;
+      let created: boolean|null;
+      [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitInfo, { transaction });
+      record = await MysqlRecruitInfoSequelize.findOne({ where: { url: recruitInfo.url } });
+      if (recruitInfo.region_id && record && record.id) {
         for (const region_id of recruitInfo.region_id) {
-          await MysqlJobRegionSequelize.upsert({
-            job_id: record.id,
-            region_id: region_id
-          }, { transaction });
+         await MysqlJobRegionSequelize.upsert(
+                    {
+                      job_id: record.id,
+                      region_id: region_id
+                    },{
+                    transaction
+                  });
         }
       }
       await transaction.commit();
-      return record;
+      return record!;
 
     } catch (error) {
       await transaction.rollback();

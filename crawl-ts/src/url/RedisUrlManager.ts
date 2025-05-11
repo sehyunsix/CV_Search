@@ -91,10 +91,11 @@ export const enum URLSTAUS
         if (oldStatus) {
           await this.redisClient.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
           await this.redisClient.sRem(`${oldStatus}`, url);
-          await this.redisClient.hSet(`status:${domian}`, url, newStatus);
-          await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
-          await this.redisClient.sAdd(newStatus, url);
         }
+        await this.redisClient.hSet(`status:${domian}`, url, newStatus);
+        await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
+        await this.redisClient.sAdd(newStatus, url);
+
       } catch (error) {
         logger.error(`URL 상태 설정 중 오류 (${url}):`, error);
         throw error;

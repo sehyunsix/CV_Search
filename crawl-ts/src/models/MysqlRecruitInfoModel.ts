@@ -166,12 +166,6 @@ MysqlRecruitInfoSequelize.init(
 
 
 MysqlJobRegionSequelize.init({
-  id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false,
-  },
   job_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -185,6 +179,12 @@ MysqlJobRegionSequelize.init({
   sequelize: mysqlRecruitInfoSequelize,
   tableName: process.env.MYSQL_JOB_REGION_TABLE,
   timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['job_id', 'region_id']
+    }
+  ]
 })
 
 
