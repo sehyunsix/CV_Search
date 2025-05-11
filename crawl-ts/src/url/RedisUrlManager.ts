@@ -3,8 +3,11 @@
   import { RobotsParsingResult } from './urlUtils';
   import { defaultLogger as logger } from '../utils/logger';
   import { URL } from 'url';
-  import { RedisClientType } from 'redis';
-  import { redis } from '../database/RedisConnector';
+  import { RedisClientType ,createClient} from 'redis';
+  const redis :RedisClientType = createClient({
+   url: `redis://${process.env.REDIS_USERNAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/0`,
+   legacyMode: false, // 반드시 설정 !!
+  });
 
 export type UrlStatus = 'visited' | 'notvisited' | 'hasRecruitInfo' | 'noRecruitInfo';
 

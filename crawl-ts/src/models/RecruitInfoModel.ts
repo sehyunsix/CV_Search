@@ -159,7 +159,7 @@ export interface ICacheDbRecruitInfo extends IBotRecruitInfo , IRawContent{
  */
 export interface IDbRecruitInfo extends Omit<ICacheDbRecruitInfo, 'is_parse_success' | 'is_recruit_info' | 'is_it_recruit_info'> {
   // 특정 필드 재정의 (필요시)
-  id? : string
+  id? : number;
 }
 
 export interface RegionResult{
@@ -167,3 +167,8 @@ export interface RegionResult{
 }
 
 
+
+export interface RecruitInfoUrlDto {
+  id: number;
+  url: string;
+}

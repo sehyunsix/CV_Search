@@ -3,6 +3,7 @@ import { IDbRecruitInfo } from '../models/RecruitInfoModel';
 import { z } from 'zod';
 
 export class MysqlRecruitInfoSequelize extends Model<IDbRecruitInfo> {
+  public id!: number;
   public url!: string;
   public text!: string;
   public created_at!: Date;
@@ -45,7 +46,12 @@ console.log(process.env.MYSQL_HOST);
 
 MysqlRecruitInfoSequelize.init(
     {
-
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+      },
       title: {
         type: DataTypes.STRING(512),
         allowNull: false,

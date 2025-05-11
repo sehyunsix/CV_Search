@@ -300,7 +300,7 @@ export class GeminiParser implements IParser {
   }
 
 
-  async ParseRegionText(rawContent: string, retryNumber: number): Promise<string[]|undefined> {
+  async ParseRegionText(rawContent: string, retryNumber: number ,retryDelay: number=1000): Promise<string[]|undefined> {
     for (let attempt = 1; attempt <= retryNumber; attempt++) {
       try {
         const model = new GoogleGenerativeAI(this.apiKeyGenerator.next().value).getGenerativeModel({
@@ -343,7 +343,7 @@ export class GeminiParser implements IParser {
         if (result) {
           return result
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // 1초 대기
+        await new Promise((resolve) => setTimeout(resolve, retryDelay)); // 1초 대기
       } catch (error) {
         logger.error(`재시도 횟수 ${attempt}/${retryNumber} 증 에러 발생`);
         if (retryNumber === attempt) {
@@ -356,7 +356,7 @@ export class GeminiParser implements IParser {
   * 원본 콘텐츠 파싱
   * @param rawContent 원본 콘텐츠
   */
-  async parseRawContentRetry(rawContent: IRawContent, retryNumber: number): Promise<IBotRecruitInfo | undefined> {
+  async parseRawContentRetry(rawContent: IRawContent, retryNumber: number ,retryDelay: number=1000 ): Promise<IBotRecruitInfo | undefined> {
     for (let attempt = 1; attempt <= retryNumber; attempt++) {
       try {
         const model = new GoogleGenerativeAI(this.apiKeyGenerator.next().value).getGenerativeModel({
@@ -396,7 +396,7 @@ export class GeminiParser implements IParser {
         if (result) {
           return result
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // 1초 대기
+        await new Promise((resolve) => setTimeout(resolve, retryDelay)); // 1초 대기
       } catch (error) {
         logger.error(`재시도 횟수 ${attempt}/${retryNumber} 증 에러 발생`);
         if (retryNumber === attempt) {

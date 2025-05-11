@@ -51,6 +51,9 @@ export async function regionText2RegionIds(input: string): Promise<number[]> {
     if (region.sigungu && region.sigungu.length > 0 && input.includes(region.sigungu)) {
       result.push(region.id);
     }
+     if (region.sigungu && region.sigungu.length > 2 && input.includes(region.sigungu.slice(0, region.sigungu.length - 1))) {
+      result.push(region.id);
+    }
 
     if (input.includes(fullName)) {
       result.push(region.id);
@@ -64,14 +67,16 @@ export async function regionText2RegionIds(input: string): Promise<number[]> {
 
 export async function regionText2RegionIdsAi(input: string): Promise<number[]> {
 
-  return await parser.ParseRegionText(input, 100).then(
+  const baseIds = await regionText2RegionIds(input);
+  return await parser.ParseRegionText(input, 100,3000).then(
     (results) => {
     if (!results) return [];
-      return Array.from(new Set(results.
-        filter(cd=> cd.length == 10)
+
+      const ids = results.
+        filter(cd => cd.length == 10)
         .map(cd => cdToRegionMap[simplifyRegionCode(cd)]?.id)
-        .filter(id => id !== undefined)
-                  ));
+        .filter(id => id !== undefined);
+      return [...new Set([...ids, ...baseIds])]
     }
   ).catch(
     (error) => {
