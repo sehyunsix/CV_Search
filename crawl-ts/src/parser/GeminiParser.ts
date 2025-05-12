@@ -2,23 +2,16 @@ import {
   GoogleGenerativeAI,
   Schema,
   SchemaType,
-
 } from '@google/generative-ai';
 import { IParser } from './IParser';
-import { CreateCacheDBRecruitInfoDTO,  GeminiResponseRecruitInfoDTO } from '../models/RecruitInfoModel';
+import {   GeminiResponseRecruitInfoDTO } from '../models/RecruitInfoModel';
 import { IRawContent } from '../models/RawContentModel';
 import { VisitResultModel } from '../models/VisitResult';
-import { QueueNames } from '../message/MessageService';
-import { IMessageService } from '../message/IMessageService';
-import { IUrlManager } from '../url/IUrlManager';
 import { defaultLogger as logger } from '../utils/logger';
 import { cd2RegionId, OTHER_REGION_ID, regionText2RegionIds } from '../trasnform/Transform';
 
 
-// --- 상수 ---
-const DEFAULT_MODEL_NAME = 'gemini-2.0-flash-lite';
-const RATE_LIMIT_HTTP_STATUS = 429;
-const RATE_LIMIT_MESSAGE_FRAGMENT = 'Resource has been exhausted';
+
 const JSON_MIME_TYPE = 'application/json';
 
 
@@ -214,12 +207,6 @@ export class GeminiParser implements IParser {
   private readonly modelName: string;
 
   private apiKeyGenerator: Generator<string, string, undefined>;
-
-
-  urlManager?: IUrlManager;
-
-  messageService?: IMessageService;
-
   constructor() {
     // 기본 설정
     this.modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
@@ -244,32 +231,7 @@ export class GeminiParser implements IParser {
 
 
 
-  /**
-   * 원본 콘텐츠 로드
-   * @param options 로드 옵션
-   */
-  async loadRawContent(batchSize: number): Promise<IRawContent[]> {
-    try {
 
-      if (!this.messageService) {
-        throw new Error('RabbitMQManager 또는 MessageService가 초기화되지 않았습니다.');
-      }
-
-      const rawContents: IRawContent[] = await this.messageService.consumeMessages<IRawContent>(
-        QueueNames.VISIT_RESULTS,
-        batchSize
-      );
-
-      if (rawContents.length === 0) {
-        logger.warn('조건에 맞는 원본 콘텐츠가 없습니다.');
-      }
-
-      return rawContents;
-    } catch (error) {
-      logger.error(`원본 콘텐츠 로드 중 오류: ${(error as Error).message}`);
-      return [];
-    }
-  }
 
   async loadMongoRawContent(batchSize: number): Promise<IRawContent[]> {
     try {
@@ -412,7 +374,6 @@ export class GeminiParser implements IParser {
             }
 
             const data = JSON.parse(responseText) as GeminiResponseRecruitInfoDTO
-
             // API 응답 유효성 처리
             data.apply_end_date = this.parseDateOrNull(data.apply_end_date);
             data.apply_start_date = this.parseDateOrNull(data.apply_start_date);

@@ -1,14 +1,16 @@
 import regions from '../../static/regions.json';
+import { GeminiParser } from '@parser/GeminiParser';
+import { defaultLogger as logger } from '../utils/logger';
 
-export const OTHER_REGION_ID = 283
-export const OTHER_COUNTY_ID = 282
+export const OTHER_REGION_ID = 282
+export const OTHER_COUNTY_ID = 281
 
 // const parser = new GeminiParser();
-const cdToRegionMap = createCdToRegionMap(regions);
+export const cdToRegionMap = createCdToRegionMap(regions);
 
 
 // 입력 JSON 데이터의 타입 정의
-interface Region {
+export interface Region {
   id: number;
   cd: string;
   sido: string;
@@ -35,7 +37,7 @@ function createCdToRegionMap(regions: Region[]): Record<string, Region> {
 
 
 function simplifyRegionCode(code: string): string {
-  if (code.length !== 10) throw new Error("코드는 10자리여야 합니다");
+  if (code.length !== 10) return code;
   return code.slice(0, 5) + '00000';
 }
 
@@ -78,30 +80,42 @@ export function regionText2RegionIds(input: string): number[] {
 
 }
 
-// export async function regionText2RegionIdsAi(input: string): Promise<number[]> {
 
-//   const baseIds = regionText2RegionIds(input);
-//   return await parser.ParseRegionText(input, 100,3000).then(
-//     (results) => {
-//     if (!results) return [];
 
-//       const ids = results.
-//         filter(cd => cd.length == 10)
-//         .map(cd => cdToRegionMap[simplifyRegionCode(cd)]?.id)
-//         .filter(id => id !== undefined);
-//       return [...new Set([...ids, ...baseIds])]
-//     }
-//   ).catch(
-//     (error) => {
-//       logger.error('Region Text 로 변환하는데 실패하였습니다.')
-//       throw error
-//     }
-//   )
-//   .catch(
-//     (error) => {
-//       logger.error('Region Cd를 id로 변환하는데 실패하였습니다.')
-//       throw error
-//     }
-//   )
+export async function regionText2RegionIdsAi(parser : GeminiParser ,input: string |undefined): Promise<number[]> {
 
-// }
+  if (!input) {
+    return [OTHER_REGION_ID];
+  }
+  const baseIds = regionText2RegionIds(input);
+  return await parser.ParseRegionText(input, 100,3000).then(
+    (results) => {
+    if (!results) return [];
+      const ids = results.
+        filter(cd => cd.length == 10)
+        .map(cd => cdToRegionMap[simplifyRegionCode(cd)]?.id)
+        .filter(id => id !== undefined);
+      return [...new Set([...ids, ...baseIds])]
+    }
+  ).catch(
+    (error) => {
+      logger.error('Region Text 로 변환하는데 실패하였습니다.')
+      throw error
+    }
+  ).then(
+    (results) => {
+      if (results.length == 0) {
+        logger.error('Region Text 로 변환한 결과가 없습니다.')
+        return [OTHER_REGION_ID]
+      }
+      return results
+    }
+  )
+  .catch(
+    (error) => {
+      logger.error('Region Cd를 id로 변환하는데 실패하였습니다.')
+      throw error
+    }
+  )
+
+}

@@ -23,7 +23,6 @@ describe('Recruit Info Repository 확인', () => {
       region_id: [1, 2, 3], // 예시로 지역 ID 배열 추가
     };
     const createdRecruitInfo = await repository.createRecruitInfo(recruitInfo);
-    const recrod = await repository.getRecruitInfoByUrl(recruitInfo.url);
   }
     )
   });

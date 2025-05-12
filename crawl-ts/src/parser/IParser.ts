@@ -8,11 +8,6 @@ import { IRawContent } from '../models/RawContentModel';
  */
 export interface IParser {
 
-  /**
-   * 원본 콘텐츠 로드
-   * @param options 로드 옵션
-   */
-  loadRawContent(batchSize : number ):Promise<IRawContent[]>;
 
   /**
    * 원본 콘텐츠를 파싱하여 채용 정보 추출
