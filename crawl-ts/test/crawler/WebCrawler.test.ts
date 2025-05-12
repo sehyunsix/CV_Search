@@ -118,7 +118,7 @@ describe('WebCrawler', () => {
 
   describe('visitUrl', () => {
     test('should successfully visit a URL and extract data', async () => {
-      const result = await crawler.visitUrl( url: serverUrl, domain: 'localhost' );
+      const result = await crawler.visitUrl( serverUrl, 'localhost' );
 
       // Verify the result
       expect(result.success).toBe(true);
@@ -142,7 +142,7 @@ describe('WebCrawler', () => {
       mockBrowserManager.initBrowser.mockRejectedValueOnce(new Error('Browser error'));
 
       try {
-        await crawler.visitUrl(url: serverUrl, domain: 'localhost' );
+        await crawler.visitUrl( serverUrl, 'localhost' );
       } catch(error)
       {
         expect((error as Error).message).toContain('Browser');
@@ -154,13 +154,13 @@ describe('WebCrawler', () => {
 
     test('should handle navigation errors', async () => {
       // Mock navigation error
-      mockPage.goto.mockRejectedValueOnce(new Error('Navigation error'));
-
-      const result = await crawler.visitUrl( url: serverUrl, domain: 'localhost' );
-
-      // Verify error handling
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Navigation error');
+      mockPage.goto.mockRejectedValue(new Error('Navigation error'));
+      try {
+        const result = await crawler.visitUrl(serverUrl, 'localhost');
+        fail('Expected error was not thrown');
+      } catch (error) {
+        expect((error as Error).message).toContain('Navigation error');
+      }
     });
   });
 

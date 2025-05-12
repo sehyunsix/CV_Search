@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import { GeminiParser, ParseError } from '../parser/GeminiParser';
-import { handleLiveMessage } from '../message/Consume';
+import { handleLiveMessage } from '../message/Consumer';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRawContent } from '../models/RecruitInfoModel';
 import { ConsumeMessage } from 'amqplib';

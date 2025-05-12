@@ -11,10 +11,6 @@ import { GeminiParser } from '../parser/GeminiParser';
     .then(async (results) => {
       for (const result of results) {
         const region_text = result.region_text;
-        if (!region_text) {
-          console.log('region_text가 없습니다.');
-          continue;
-        }
         const region_id = await regionText2RegionIdsAi(paser ,region_text);
         if (region_id.length > 0) {
           for (const id of region_id) {

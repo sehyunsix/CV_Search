@@ -4,10 +4,11 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog } from 'puppeteer';
-import { IMessageService } from '../message/IMessageService';
+import { Dialog ,Page} from 'puppeteer';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '@url/RedisUrlManager';
+import { Producer } from '@message/Producer';
+import { IRawContent, RawContentSchema } from '@models/RawContentModel';
 
   /**
    * 웹 크롤러 구현체
@@ -17,7 +18,7 @@ import { URLSTAUS } from '@url/RedisUrlManager';
     browserManager: IBrowserManager;
     contentExtractor: IContentExtractor;
     urlManager: IUrlManager;
-    messageService: IMessageService;
+    rawContentProducer: Producer;
 
     /**
      * 웹 크롤러 생성자
@@ -26,14 +27,14 @@ import { URLSTAUS } from '@url/RedisUrlManager';
     constructor(options: {
       browserManager: IBrowserManager;
       contentExtractor: IContentExtractor;
-      messageService: IMessageService;
+      messageService: Producer;
       urlManager: IUrlManager;
 
     }) {
       this.browserManager = options.browserManager;
       this.contentExtractor = options.contentExtractor;
       this.urlManager = options.urlManager;
-      this.messageService = options.messageService;
+      this.rawContentProducer = options.messageService;
     }
 
     /**
@@ -41,7 +42,7 @@ import { URLSTAUS } from '@url/RedisUrlManager';
      */
     async initialize(): Promise<void> {
       // 데이터베이스 연결
-      await this.messageService.connect();
+      await this.rawContentProducer.connect();
 
       await this.urlManager.connect();
 
@@ -65,40 +66,41 @@ import { URLSTAUS } from '@url/RedisUrlManager';
       url: url,
       domain: domain,
     });
-
+    let page : Page;
     //페이지 생성
     return this.browserManager.getNewPage()
-      .then((page) => {
-        page.on('dialog', async (dialog: Dialog) => {
+      .then((newPage) => {
+        page = newPage;
+        return page.on('dialog', async (dialog: Dialog) => {
           await dialog.dismiss();
         });
-        return page;
       })
-      .then((page) => {
-        page.goto(url, {
+      // 페이지 방문
+      .then(() => {
+        return  page.goto(url, {
           waitUntil: 'networkidle2',
           timeout: 20000 // 20초
-        });
-        return page;
+        })
       })
-      .then((page) => {
+      //페이지  내용 추출
+      .then(() => {
         subUrlResult.finalUrl = page.url();
         subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
-        return this.contentExtractor.extractPageContent(page).then((results) => ({page, results }));
+        return this.contentExtractor.extractPageContent(page).then((results) => ({ page, results }));
       })
+      //페이지  링크 추출
       .then((context) => {
-        // 페이지 내용 추출
         subUrlResult.title = context.results.title;
         subUrlResult.text = context.results.text;
-        return this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({...context, results }));
+        return this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({ ...context, results }));
       })
       .then((context) => {
-        // 기본 링크 추출 (a 태그)
+      //페이지  클릭 링크  추출
         subUrlResult.herfUrls = context.results;
-        return this.contentExtractor.extractOnclickLinks(context.page, [domain]);
+        return this.contentExtractor.extractOnclickLinks(context.page, [domain]).then((results) => ({ ...context, results }));
       })
-      .then((onclickUrls) => {
-        subUrlResult.onclickUrls = onclickUrls;
+      .then((context) => {
+        subUrlResult.onclickUrls = context.results;
         subUrlResult.crawledUrls = Array.from(new Set([
           ...subUrlResult.herfUrls,
           ...subUrlResult.onclickUrls
@@ -111,60 +113,102 @@ import { URLSTAUS } from '@url/RedisUrlManager';
           allowed_after_robots: subUrlResult.crawledUrls.length
         };
         subUrlResult.success = true;
-        return subUrlResult;
+        return context.page.close().then(() => subUrlResult);
+      }).catch((error) => {
+        logger.error(`URL 방문 중 오류 발생: ${error.message}`);
+        throw error;
       })
+      .finally(() => {
+        return page.close().catch((error) => {
+          throw error;
+        })
+      }
+      )
+
+
   }
 
-  async saveVisitResult(result: SubUrl): Promise<boolean> {
-    await this.messageService.sendVisitResult(result);
-    result.crawledUrls.map((url) => {
+  /**
+   * 방문한 URL 링크 레디스에 저장
+   * @param result 방문 결과
+   * @returns
+   */
+  async saveLinkUrls(result: SubUrl): Promise<boolean> {
+
+    return await Promise.all(result.crawledUrls.map((url) => {
       this.urlManager.addUrl(url, result.domain, URLSTAUS.NOT_VISITED)
-    })
-    await this.urlManager.setURLStatus(result.url, URLSTAUS.VISITED);
-    return true;
+    })).then(() => true)
+      .catch((error) => {
+        logger.error(`[Redis] 링크 URL 저장 중 오류 발생: ${error.message}`);
+        throw error;
+      }
+    )
+    }
+
+
+  /**
+   * URL에서 추출한 RawContent RabbitMQ에 전송
+   * @param result 방문 결과
+   * @returns
+   */
+    async sendRawContent(result: SubUrl): Promise<boolean> {
+
+    if (RawContentSchema.safeParse(result).success === false) {
+      logger.debug('[RabbitMQ] Invalid message format:', result);
+      return false;
+    }
+
+    const rawContent: IRawContent = {
+      url: result.url,
+      title: result.title!,
+      domain: result.domain,
+      text: result.text!,
+    };
+
+    return this.rawContentProducer.sendMessage(rawContent)
+      .then(() => true)
+      .catch((error) => {
+        logger.error(`[RabbitMQ] RAW CONTENT 전송 중 오류 발생: ${error.message}`);
+        throw error;
+      });
   }
+
+
 
 async processQueue(): Promise<void> {
-    let visitCount = 0;
     while (true) {
       try {
         const nextUrlInfo = await this.urlManager.getNextUrl();
         if (!nextUrlInfo) {
-
-          logger.debug('더 이상 방문할 URL이 없습니다.');
-          break;
+          logger.debug("[Crawler] 큐에 처리할 URL이 없습니다.");
+          continue;
         }
 
-        visitCount++;
-
-        logger.debug(`URL ${visitCount} 처리 중...`);
-
         const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain);
-
         if (!visitResult.text) {
-          logger.debug("텍스트 없음, 건너뜀.");
+          logger.debug("[Crawler] 텍스트 없음, 건너뜀.");
           continue;
         }
 
         const isSaveSuccess = await this.urlManager.saveTextHash(visitResult.text);
         if (isSaveSuccess===false) {
-          logger.debug("중복된 텍스트, 저장하지 않음.");
+          logger.debug("[Crawler] 중복된 텍스트, 저장하지 않음.");
           this.urlManager.setURLStatus(visitResult.url, URLSTAUS.NO_RECRUITINFO);
           continue;
         }
 
-        await this.saveVisitResult(visitResult);
+        await this.saveLinkUrls(visitResult).then(() => {
+          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+        });
 
-        // if (visitCount < this.maxUrls) {
-        //   logger.debug(`다음 URL 처리 전 ${this.delayBetweenRequests}ms 대기...`);
-        //   await new Promise(resolve => setTimeout(resolve, this.delayBetweenRequests));
-        // }
+        await this.sendRawContent(visitResult).then(() => {
+          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+        });
 
       } catch (error) {
         throw error;
       }
     }
-    logger.debug(`큐 처리 완료. 총 ${visitCount}개 URL 방문`);
 }
 
 

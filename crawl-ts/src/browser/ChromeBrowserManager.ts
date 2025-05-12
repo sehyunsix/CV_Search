@@ -19,32 +19,7 @@ export class ChromeBrowserManager implements IBrowserManager {
    * @returns 브라우저 인스턴스
    */private isLaunching = false;
 
-// async initBrowser(): Promise<Browser | undefined> {
-//   if (this.browser && this.browser.isConnected()) return this.browser;
 
-//   if (this.isLaunching) {
-//     while (this.isLaunching) {
-//       await new Promise(res => setTimeout(res, 100));
-//     }
-//     return this.browser;
-//   }
-
-//   this.isLaunching = true;
-//   try {
-//     this.browser = await puppeteer.launch({
-//       headless: CONFIG.BROWSER.HEADLESS,
-//       args: CONFIG.BROWSER.LAUNCH_ARGS,
-//       timeout: 10000,
-//     });
-//     return this.browser;
-//   } catch (err) {
-//     logger.error("브라우저 생성 실패", err);
-//     return undefined;
-//   } finally {
-//     this.isLaunching = false;
-//   }
-  // }
-  
 async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
   for (let i = 0; i < retries; i++) {
     try {
