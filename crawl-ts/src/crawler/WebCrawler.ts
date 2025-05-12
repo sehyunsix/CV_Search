@@ -56,8 +56,9 @@ import { TimeoutError } from 'sequelize/types';
    * @param urlInfo 방문할 URL 정보
    * @returns 방문 결과
    */
-  async visitUrl(urlInfo: { url: string; domain: string }): Promise<SubUrl> {
-    const { url, domain } = urlInfo;
+  async visitUrl(url: string, domain: string ): Promise<SubUrl> {
+
+
     logger.debug(`=== URL 방문 시작: ${url} ===`);
     const startTime = Date.now();
 
@@ -67,140 +68,54 @@ import { TimeoutError } from 'sequelize/types';
       visitedAt: new Date(),
     });
     let page: Page;
-    try {
-        page = await this.browserManager.getNewPage();
-    } catch (error) {
-        if (error instanceof Error) {
-          logger.error('브라우저 페이지 생성 중 에러', { error: error.message });
-              subUrlResult.success = false;
-                if (error instanceof ProtocolError ) {
-                  logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
-                  throw error;
-                }
-            }
-            return subUrlResult;
-      }
-    try {
-      // 새 페이지 열기
-      try {
-        // 자바스크립트 대화상자 처리
+
+    //페이지 생성
+    return this.browserManager.getNewPage()
+      .then((page) => {
         page.on('dialog', async (dialog: Dialog) => {
           await dialog.dismiss();
         });
-      } catch(error)
-      {
-        logger.error('다이어로그 처리 중 에러', error);
-      }
-      try {
-        // 페이지 로드
-        await page.goto(url, {
+        return page;
+      })
+      .then((page) => {
+        page.goto(url, {
           waitUntil: 'networkidle2',
           timeout: 20000 // 20초
         });
-      } catch (error) {
-        logger.error('브라우저 페이지 이동 중', error);
-        throw error;
-      }
-
-      // 현재 URL 가져오기 (리다이렉트 가능성)
-      subUrlResult.finalUrl = page.url();
-      // 최종 URL의 도메인 확인
-      subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
-
-      try {
+        return page;
+      })
+      .then((page) => {
+        subUrlResult.finalUrl = page.url();
+        subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
+        return this.contentExtractor.extractPageContent(page).then((results) => ({page, results }));
+      })
+      .then((context) => {
         // 페이지 내용 추출
-        subUrlResult.pageContent = await this.contentExtractor.extractPageContent(page);
-        subUrlResult.title = subUrlResult.pageContent.title;
-        subUrlResult.text = subUrlResult.pageContent.text;
-      } catch (error) {
-        logger.error('페이지 내용 추출 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'content_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-      }
-
-      try {
+        subUrlResult.title = context.results.title;
+        subUrlResult.text = context.results.text;
+        return this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({...context, results }));
+      })
+      .then((context) => {
         // 기본 링크 추출 (a 태그)
-        const extractStartTime = Date.now();
-        subUrlResult.herfUrls = await this.contentExtractor.extractLinks(page, [domain]);
-        const extractRuntime = Date.now() - extractStartTime;
-        logger.eventInfo('extract_herf', { url, runtime: extractRuntime });
-      } catch (error) {
-        logger.error('링크 추출 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'link_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-      }
-
-      try {
-        // JavaScript 실행을 통한 추가 URL 추출 (onclick 이벤트 등)
-        // 이 예제에서는 간소화를 위해 생략하고 빈 배열 할당
-        subUrlResult.onclickUrls = await this.contentExtractor.extractOnclickLinks(page, [domain]);
-        logger.debug('JavaScript 이벤트 처리 생략 (간소화된 구현)');
-      } catch (error) {
-        logger.error('JavaScript 실행 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'script_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          url: subUrlResult.finalUrl
-        });
-        throw error;
-      }
-      subUrlResult.success = true;
-      // console.log(subUrlResult.herfUrls);
-      // console.log(subUrlResult.onclickUrls);
-      // 모든 발견된 URL 병합
-      subUrlResult.crawledUrls = Array.from(new Set([
-        ...subUrlResult.herfUrls,
-        ...subUrlResult.onclickUrls
-      ]));
-
-      // 통계 정보 업데이트
-      subUrlResult.crawlStats = {
-        total: subUrlResult.crawledUrls.length,
-        href: subUrlResult.herfUrls?.length || 0,
-        onclick: subUrlResult.onclickUrls?.length || 0,
-        blocked_by_robots: 0,
-        allowed_after_robots: subUrlResult.crawledUrls.length
-      };
-
-      const runtime = Date.now() - startTime;
-      logger.eventInfo('visit_url', { runtime });
-
-      return subUrlResult;
-    } catch (error) {
-
-      if (error instanceof ProtocolError || error instanceof TimeoutError) {
-            throw error;
-      }
-      // 오류 정보를 결과 객체에 추가
-      subUrlResult.success = false;
-      subUrlResult.error = error instanceof Error ? error.message : String(error);
-      subUrlResult.errors.push({
-        type: 'page_visit',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-
-      const runtime = Date.now() - startTime;
-      logger.eventError('visit_url', { runtime, error: subUrlResult.error });
-      return subUrlResult;
-    }
-    finally {
-      try {
-        if (page) {
-          await page.close();
-          logger.debug('페이지 닫기 완료');
-        }
-      } catch (pageCloseError) {
-        logger.error('페이지 닫기 중 오류:', pageCloseError);
-      }
-    }
+        subUrlResult.herfUrls = context.results;
+        return this.contentExtractor.extractOnclickLinks(context.page, [domain]);
+      })
+      .then((onclickUrls) => {
+        subUrlResult.onclickUrls = onclickUrls;
+        subUrlResult.crawledUrls = Array.from(new Set([
+          ...subUrlResult.herfUrls,
+          ...subUrlResult.onclickUrls
+        ]));
+        subUrlResult.crawlStats = {
+          total: subUrlResult.crawledUrls.length,
+          href: subUrlResult.herfUrls?.length || 0,
+          onclick: subUrlResult.onclickUrls?.length || 0,
+          blocked_by_robots: 0,
+          allowed_after_robots: subUrlResult.crawledUrls.length
+        };
+        subUrlResult.success = true;
+        return subUrlResult;
+      })
   }
 
   async saveVisitResult(result: SubUrl): Promise<boolean> {
@@ -227,7 +142,7 @@ async processQueue(): Promise<void> {
 
         logger.debug(`URL ${visitCount} 처리 중...`);
 
-        const visitResult = await this.visitUrl(nextUrlInfo);
+        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain);
 
         if (!visitResult.text) {
           logger.debug("텍스트 없음, 건너뜀.");
@@ -247,6 +162,7 @@ async processQueue(): Promise<void> {
         //   logger.debug(`다음 URL 처리 전 ${this.delayBetweenRequests}ms 대기...`);
         //   await new Promise(resolve => setTimeout(resolve, this.delayBetweenRequests));
         // }
+
       } catch (error) {
         throw error;
       }
