@@ -4,7 +4,7 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog ,Page ,Browser ,ProtocolError} from 'puppeteer';
+import { Dialog ,Page ,ProtocolError} from 'puppeteer';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '@url/RedisUrlManager';
@@ -51,8 +51,8 @@ import { TimeoutError } from 'sequelize/types';
       logger.debug('크롤러 초기화 완료');
     }
 
-    /**
-   * URL 방문 및 데이터 추출
+  /**
+   * 페이지 방문 및 데이터 추출
    * @param urlInfo 방문할 URL 정보
    * @returns 방문 결과
    */

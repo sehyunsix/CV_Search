@@ -3,7 +3,6 @@ import { defaultLogger as logger } from '../utils/logger';
 import CONFIG from '../config/config';
 import { execSync } from 'child_process';
 import { Browser, Page } from 'puppeteer';
-import { Puppeteer } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 import puppeteer from 'puppeteer';
@@ -44,7 +43,8 @@ export class ChromeBrowserManager implements IBrowserManager {
 //   } finally {
 //     this.isLaunching = false;
 //   }
-// }
+  // }
+  
 async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
   for (let i = 0; i < retries; i++) {
     try {
