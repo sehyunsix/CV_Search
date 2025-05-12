@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import{ Browser, Page } from 'puppeteer';
 import express from 'express';
 import * as http from 'http';
 import path from 'path';
@@ -6,20 +6,8 @@ import { WebCrawler } from '../../src/crawler/WebCrawler';
 import { IUrlManager } from '../../src/url/IUrlManager';
 import { IMessageService } from '../../src/message/IMessageService';
 import { IBrowserManager } from '../../src/browser/IBrowserManager';
-import { URLSTAUS } from '../../src/url/RedisUrlManager';
 import { IContentExtractor } from '../../src/content';
 
-// Mock WebContentExtractor
-jest.mock('../../src/content/WebContentExtractor', () => {
-  return {
-    WebContentExtractor: jest.fn().mockImplementation(() => ({
-      extractLinks: jest.fn().mockResolvedValue( ['https://localhost/normal', 'https://localhost/page2.html'],
-      ),
-      extractTitle: jest.fn().mockResolvedValue('Test Crawler Page'),
-      extractText: jest.fn().mockResolvedValue('This is a test page with some text content. Redirect Me')
-    }))
-  };
-});
 
 describe('WebCrawler', () => {
   let server: http.Server;
@@ -130,7 +118,7 @@ describe('WebCrawler', () => {
 
   describe('visitUrl', () => {
     test('should successfully visit a URL and extract data', async () => {
-      const result = await crawler.visitUrl({ url: serverUrl, domain: 'localhost' });
+      const result = await crawler.visitUrl( url: serverUrl, domain: 'localhost' );
 
       // Verify the result
       expect(result.success).toBe(true);
@@ -154,7 +142,7 @@ describe('WebCrawler', () => {
       mockBrowserManager.initBrowser.mockRejectedValueOnce(new Error('Browser error'));
 
       try {
-        await crawler.visitUrl({ url: serverUrl, domain: 'localhost' });
+        await crawler.visitUrl(url: serverUrl, domain: 'localhost' );
       } catch(error)
       {
         expect((error as Error).message).toContain('Browser');
@@ -168,7 +156,7 @@ describe('WebCrawler', () => {
       // Mock navigation error
       mockPage.goto.mockRejectedValueOnce(new Error('Navigation error'));
 
-      const result = await crawler.visitUrl({ url: serverUrl, domain: 'localhost' });
+      const result = await crawler.visitUrl( url: serverUrl, domain: 'localhost' );
 
       // Verify error handling
       expect(result.success).toBe(false);
@@ -176,73 +164,5 @@ describe('WebCrawler', () => {
     });
   });
 
-  // describe('run', () => {
-  //   test('should process URLs until no more are available', async () => {
-  //     // Setup URL manager to return a URL once, then null
-  //     mockUrlManager.getNextUrl
-  //       .mockResolvedValueOnce({ url: serverUrl, domain: 'localhost' })
-  //       .mockResolvedValueOnce(null);
-  //     // console.log(await crawler.urlManager.getNextUrl());
-  //     // console.log(await crawler.urlManager.getNextUrl());
-  //     await crawler.run();
 
-  //     // Verify URL was processed
-  //     expect(mockUrlManager.getNextUrl).toHaveBeenCalledTimes(2);
-  //     expect(mockUrlManager.setURLStatus).toHaveBeenCalledWith(
-  //       serverUrl,
-  //       URLSTAUS.VISITED
-  //     );
-  //     expect(mockUrlManager.addUrl).toHaveBeenCalled();
-  //   });
-
-  //   test('should handle errors during URL processing', async () => {
-  //     // Setup URL manager to return a URL
-  //     mockUrlManager.getNextUrl.mockResolvedValueOnce({ url: serverUrl, domain: 'localhost' })
-  //                               .mockResolvedValueOnce(null);
-
-  //     // Setup visitUrl to throw an error
-  //     mockBrowserManager.initBrowser.mockRejectedValueOnce(new Error('Browser error'));
-  //     try {
-  //         await crawler.run()
-  //     } catch(error)
-  //     {
-  //       expect((error as Error).message).toContain('Browser');
-  //     }
-  //     // Verify error was handled
-  //     expect(mockUrlManager.getNextUrl).toHaveBeenCalled();
-  //     expect(mockMessageService.sendVisitResult).toHaveBeenCalledTimes(0);
-  //     expect(mockUrlManager.setURLStatus).toHaveBeenCalledTimes(0);
-
-  //   });
-
-  //   test('should stop when browser manager fails to initialize', async () => {
-  //     // Mock browser manager to fail initialization
-  //     mockBrowserManager.initBrowser.mockResolvedValueOnce(undefined);
-  //      try {
-  //         await crawler.run()
-  //     } catch(error)
-  //     {
-  //        expect(error).toBeInstanceOf(Error);
-  //     }
-  //     // Verify early exit
-  //     expect(mockUrlManager.getNextUrl).toHaveBeenCalledTimes(1);
-  //   });
-
-  //   test('should skip duplicate content', async () => {
-  //     // Setup URL manager to return a URL
-  //     mockUrlManager.getNextUrl.mockResolvedValueOnce({ url: serverUrl, domain: 'localhost' })
-  //                             .mockResolvedValueOnce(null);
-  //     // Mock content already exists
-  //     mockUrlManager.saveTextHash.mockResolvedValueOnce(false);
-
-  //     await crawler.run();
-
-  //     // Verify duplicate handling
-  //     expect(mockUrlManager.setURLStatus).toHaveBeenCalledWith(
-  //       serverUrl,
-  //       URLSTAUS.NO_RECRUITINFO
-  //     );
-  //     expect(mockMessageService.sendVisitResult).not.toHaveBeenCalled();
-  //   });
-  // });
 });

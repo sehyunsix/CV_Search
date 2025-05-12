@@ -4,11 +4,10 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog ,Page ,ProtocolError} from 'puppeteer';
+import { Dialog } from 'puppeteer';
 import { IMessageService } from '../message/IMessageService';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '@url/RedisUrlManager';
-import { TimeoutError } from 'sequelize/types';
 
   /**
    * 웹 크롤러 구현체
@@ -65,9 +64,7 @@ import { TimeoutError } from 'sequelize/types';
     let subUrlResult = new SubUrl({
       url: url,
       domain: domain,
-      visitedAt: new Date(),
     });
-    let page: Page;
 
     //페이지 생성
     return this.browserManager.getNewPage()

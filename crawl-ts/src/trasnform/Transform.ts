@@ -63,13 +63,6 @@ export function regionText2RegionIds(input: string): number[] {
     // "울산 중구" → sido="울산", sigungu="중구" 인 지역
     const fullName = region.sigungu ? `${region.sido} ${region.sigungu}` : region.sido;
 
-    if (region.sigungu && region.sigungu.length > 0 && input.includes(region.sigungu)) {
-      result.push(region.id);
-    }
-     if (region.sigungu && region.sigungu.length > 2 && input.includes(region.sigungu.slice(0, region.sigungu.length - 1))) {
-      result.push(region.id);
-    }
-
     if (input.includes(fullName)) {
       result.push(region.id);
     }
@@ -88,9 +81,10 @@ export async function regionText2RegionIdsAi(parser : GeminiParser ,input: strin
     return [OTHER_REGION_ID];
   }
   const baseIds = regionText2RegionIds(input);
+  logger.debug('baseIds', baseIds);
   return await parser.ParseRegionText(input, 100,3000).then(
     (results) => {
-    if (!results) return [];
+      if (!results) return [];
       const ids = results.
         filter(cd => cd.length == 10)
         .map(cd => cdToRegionMap[simplifyRegionCode(cd)]?.id)

@@ -2,6 +2,7 @@ import 'dotenv/config'; // dotenv 설정
 import fs from 'fs';
 import path from 'path';
 import { defaultLogger as logger } from '../utils/logger';
+import { GeminiParser } from '../parser/GeminiParser'; // GeminiParser 모듈
 
 // regionText2RegionIdsAi 함수가 비동기라고 가정합니다.
 import { regionText2RegionIdsAi } from '../trasnform/Transform';
@@ -17,6 +18,8 @@ interface RegionText{
 const regionTextsPath = path.join(__dirname, '../../static/region_text.json'); // 예: ["서울 강남구", "New York", ...]
 const regionTexts: RegionText[] = JSON.parse(fs.readFileSync(regionTextsPath, 'utf-8'));
 
+const parser = new GeminiParser();
+
 async function processRegionTexts() {
   const results: {
     region_text: string;
@@ -27,18 +30,14 @@ async function processRegionTexts() {
   let koreanCount = 0;
   let englishCount = 0;
   let koreanWithRegionIds = 0;
-
   for (const data of regionTexts) {
-    // 언어 감지
+
     const region_text = data.region_text
     const lang = isKorean(region_text) ? 'ko' : 'en';
     if (lang === 'ko') koreanCount++;
     else englishCount++;
-
     logger.debug(`[regionTranform] ${region_text} 파싱중...`);
-    const tasks: Promise<number[]> [] = [];
-    for (let i = 0; i < 3; i++) {
-       regionText2RegionIdsAi(region_text).then((regionIds) => {
+    await  regionText2RegionIdsAi(parser,region_text).then((regionIds) => {
         if (lang === 'ko' && regionIds.length > 0) {
           koreanWithRegionIds++;
         }
@@ -47,9 +46,8 @@ async function processRegionTexts() {
           region_ids: regionIds,
           lang,
         });
-      })
-      tasks.push()
-    }
+       })
+
   };
 
 

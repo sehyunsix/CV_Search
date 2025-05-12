@@ -38,7 +38,8 @@ export interface ICrawler {
 
   /**
    * URL 방문
-   * @param urlInfo 방문할 URL 정보
+   * @param url 방문할 URL 정보
+   * @param domain 도메인 정보
    * @returns 방문 결과
    */
   visitUrl(url: string, domain: string): Promise<SubUrl>;
