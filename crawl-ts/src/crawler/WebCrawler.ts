@@ -27,14 +27,14 @@ import { IRawContent, RawContentSchema } from '@models/RawContentModel';
     constructor(options: {
       browserManager: IBrowserManager;
       contentExtractor: IContentExtractor;
-      messageService: Producer;
+      rawContentProducer: Producer;
       urlManager: IUrlManager;
 
     }) {
       this.browserManager = options.browserManager;
       this.contentExtractor = options.contentExtractor;
       this.urlManager = options.urlManager;
-      this.rawContentProducer = options.messageService;
+      this.rawContentProducer = options.rawContentProducer;
     }
 
     /**

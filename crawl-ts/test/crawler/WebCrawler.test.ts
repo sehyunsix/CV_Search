@@ -4,9 +4,9 @@ import * as http from 'http';
 import path from 'path';
 import { WebCrawler } from '../../src/crawler/WebCrawler';
 import { IUrlManager } from '../../src/url/IUrlManager';
-import { IMessageService } from '../../src/message/IMessageService';
 import { IBrowserManager } from '../../src/browser/IBrowserManager';
 import { IContentExtractor } from '../../src/content';
+import { Producer } from '@message/Producer';
 
 
 describe('WebCrawler', () => {
@@ -14,9 +14,9 @@ describe('WebCrawler', () => {
   let serverUrl: string;
   let crawler: WebCrawler;
   let mockUrlManager: jest.Mocked<IUrlManager>;
-  let mockMessageService: jest.Mocked<IMessageService>;
   let mockBrowserManager: jest.Mocked<IBrowserManager>;
   let mockContentExtractor: jest.Mocked<IContentExtractor>;
+  let mockProducer: jest.Mocked<Producer>;
   let mockPage: jest.Mocked<Page>;
   let mockBrowser: jest.Mocked<Browser>;
 
@@ -73,16 +73,12 @@ describe('WebCrawler', () => {
     };
 
     // Create mock MessageService
-    mockMessageService = {
-      sendVisitResult: jest.fn().mockResolvedValue(true),
-      sendRecruitInfo: jest.fn().mockResolvedValue(true),
-      sendRawContent: jest.fn().mockResolvedValue(true),
-      consumeMessages: jest.fn().mockResolvedValue([]),
-      handleLiveMessage: jest.fn().mockResolvedValue(undefined),
+    mockProducer = {
       connect: jest.fn().mockResolvedValue(undefined),
+      sendMessage: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
-      sendAck: jest.fn().mockResolvedValue(undefined)
-    };
+    } as unknown as jest.Mocked<Producer>;
+
 
     // Create mock BrowserManager
     mockBrowserManager = {
@@ -104,7 +100,7 @@ describe('WebCrawler', () => {
     // Create crawler with mocked dependencies
     crawler = new WebCrawler({
       urlManager: mockUrlManager,
-      messageService: mockMessageService,
+      rawContentProducer: mockProducer,
       browserManager: mockBrowserManager,
       contentExtractor: mockContentExtractor,
     });
@@ -148,7 +144,7 @@ describe('WebCrawler', () => {
         expect((error as Error).message).toContain('Browser');
       }
       // Verify error handling
-      expect(mockMessageService.sendVisitResult).toHaveBeenCalledTimes(0);
+      expect(mockProducer.sendMessage).toHaveBeenCalledTimes(0);
       expect(mockUrlManager.setURLStatus).toHaveBeenCalledTimes(0);
     });
 
