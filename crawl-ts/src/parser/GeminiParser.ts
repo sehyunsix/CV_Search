@@ -4,7 +4,7 @@ import {
   SchemaType,
 } from '@google/generative-ai';
 import { IParser } from './IParser';
-import {   GeminiResponseRecruitInfoDTO } from '../models/RecruitInfoModel';
+import {  GeminiResponseRecruitInfoDTO ,CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
 import { IRawContent } from '../models/RawContentModel';
 import { VisitResultModel } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
@@ -412,22 +412,23 @@ export class GeminiParser implements IParser {
       }
     }
   }
-  // /**
-  //  * DB 저장용 모델로 변환
-  //  * @param botRecruitInfo 봇 파싱 결과
-  //  * @param rawContent 원본 콘텐츠
-  //  */
-  // makeDbRecruitInfo(botRecruitInfo: GeminiResponseRecruitInfoDTO, rawContent: IRawContent): CreateCacheDBRecruitInfoDTO {
-  //   const now = new Date();
-  //   return {
-  //     ...botRecruitInfo,
-  //     is_parse_success: true,
-  //     ...rawContent,
-  //     created_at: now,
-  //     updated_at: now,
-  //     is_public: true, // 채용 정보인 경우에만 공개
-  //   };
-  // }
+
+  /**
+   * DB 저장용 모델로 변환
+   * @param botRecruitInfo 봇 파싱 결과
+   * @param rawContent 원본 콘텐츠
+   */
+  makeDbRecruitInfo(botRecruitInfo: GeminiResponseRecruitInfoDTO, rawContent: IRawContent , favicon : string | null ): CreateDBRecruitInfoDTO {
+    const now = new Date();
+    return {
+      ...botRecruitInfo,
+      ...rawContent,
+      favicon: favicon?? undefined,
+      created_at: now,
+      updated_at: now,
+      is_public: true, // 채용 정보인 경우에만 공개
+    };
+  }
 }
 
 

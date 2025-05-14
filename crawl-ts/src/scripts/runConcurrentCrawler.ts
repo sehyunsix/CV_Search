@@ -3,8 +3,9 @@ import { ConcurrentWebCrawler } from '../crawler/CocurrentCralwer';
 import { ChromeBrowserManager } from '../browser/ChromeBrowserManager';
 import { WebContentExtractor } from '../content/WebContentExtractor';
 import { RedisUrlManager, URLSTAUS } from '../url/RedisUrlManager';
-import { MessageService } from '../message/MessageService';
 import { defaultLogger as logger } from '../utils/logger';
+import { Producer } from '@message/Producer';
+import { QueueNames } from '@message/enums';
 
 /**
  * ConcurrentWebCrawler 실행 스크립트
@@ -18,14 +19,14 @@ async function runConcurrentCrawler() {
     const browserManager = new ChromeBrowserManager();
     const contentExtractor = new WebContentExtractor();
     const urlManager = new RedisUrlManager();
-    const messageService = new MessageService();
+    const rawContentProducer = new Producer(QueueNames.VISIT_RESULTS);
 
     // 2. WebCrawler 인스턴스 생성
     const webCrawler = new WebCrawler({
       browserManager,
       contentExtractor,
       urlManager,
-      messageService
+      rawContentProducer,
     });
 
     // 3. 동시성 수준 설정 (환경 변수에서 가져오거나 기본값 사용)

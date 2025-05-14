@@ -46,7 +46,7 @@ import { IRawContent, RawContentSchema } from '@models/RawContentModel';
 
       await this.urlManager.connect();
 
-      await this.browserManager.initBrowser();
+      await this.browserManager.initBrowser(10, 3000);
 
       logger.debug('크롤러 초기화 완료');
     }
@@ -59,7 +59,7 @@ import { IRawContent, RawContentSchema } from '@models/RawContentModel';
   async visitUrl(url: string, domain: string ): Promise<SubUrl> {
 
 
-    logger.debug(`=== URL 방문 시작: ${url} ===`);
+    logger.debug(`[Crawler][visitUrl] URL 방문 시작: ${url}`);
     const startTime = Date.now();
 
     let subUrlResult = new SubUrl({
@@ -115,12 +115,12 @@ import { IRawContent, RawContentSchema } from '@models/RawContentModel';
         subUrlResult.success = true;
         return context.page.close().then(() => subUrlResult);
       }).catch((error) => {
-        logger.error(`URL 방문 중 오류 발생: ${error.message}`);
+        logger.error(`[Crawler][visitUrl] URL 방문 중 오류 발생: ${error.message}`);
         throw error;
       })
       .finally(() => {
         return page.close().catch((error) => {
-          throw error;
+          logger.error(`[Crawler][visitUrl] 페이지 닫기 중 오류 발생: ${error.message}`);
         })
       }
       )
@@ -206,7 +206,11 @@ async processQueue(): Promise<void> {
         });
 
       } catch (error) {
-        throw error;
+        if (error instanceof Error) {
+          await this.browserManager.closeBrowser();
+          await this.browserManager.initBrowser(10, 3000);
+          logger.error(`[Crawler][process] 큐 처리 중 오류 발생: ${error.message}`);
+        }
       }
     }
 }

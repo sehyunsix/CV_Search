@@ -50,6 +50,24 @@ export function isUrlAllowed(url: string, allowedDomains: string[] = []): boolea
     // 빈 URL이나 http로 시작하지 않는 URL은 허용하지 않음
     if (!url) return false;
     if (!url.startsWith('http')) return false;
+    if (
+      url.endsWith('.zip')
+      || url.endsWith('.exe')
+      || url.endsWith('.pdf')
+      || url.endsWith('.doc')
+      || url.endsWith('.docx')
+      || url.endsWith('.xls')
+      || url.endsWith('.xlsx')
+      || url.endsWith('.ppt')
+      || url.endsWith('.pptx')
+      || url.endsWith('.mp4')
+      || url.endsWith('.avi')
+      || url.endsWith('.mov')
+      || url.endsWith('.mp3')
+      || url.endsWith('.m4a')
+      || url.endsWith('.wav')
+    ) return false;
+
 
     // 허용 도메인이 없으면 모든 URL 허용
     if (allowedDomains.length === 0) return true;
