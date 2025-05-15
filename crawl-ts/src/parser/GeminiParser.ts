@@ -421,8 +421,8 @@ export class GeminiParser implements IParser {
   makeDbRecruitInfo(botRecruitInfo: GeminiResponseRecruitInfoDTO, rawContent: IRawContent , favicon : string | null ): CreateDBRecruitInfoDTO {
     const now = new Date();
     return {
-      ...botRecruitInfo,
       ...rawContent,
+      ...botRecruitInfo,
       favicon: favicon?? undefined,
       created_at: now,
       updated_at: now,

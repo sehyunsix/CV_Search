@@ -33,9 +33,6 @@ describe('Consumer', () => {
     await new Promise((resolve) => setTimeout(resolve, 4000)); // Wait for the message to be processed
 
 
-
-
-
   });
 
 

@@ -1,10 +1,8 @@
-import { Sequelize ,QueryTypes ,Model} from 'sequelize'
 import {  CreateDBRecruitInfoDTO ,RegionResult ,RecruitInfoUrlDto} from '../models/RecruitInfoModel';
 import { MysqlRecruitInfoSequelize  ,MysqlJobRegionSequelize} from '../models/MysqlRecruitInfoModel';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 import axios from 'axios';
-import { runCLI } from 'jest/build';
 /**
  * MySQL 데이터베이스 서비스 클래스
  * 채용 정보를 MySQL 데이터베이스에 저장하고 관리하는 서비스

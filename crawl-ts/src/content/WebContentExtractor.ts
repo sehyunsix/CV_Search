@@ -1,7 +1,7 @@
 import { IContentExtractor } from './IContentExtractor';
 import { defaultLogger as logger } from '../utils/logger';
 import { isUrlAllowed } from '../url/urlUtils';
-import { Page  } from 'puppeteer';
+import { Page, Target  } from 'puppeteer';
 
 /**
  * 웹 콘텐츠 추출 구현체
@@ -206,37 +206,60 @@ export class WebContentExtractor implements IContentExtractor {
     }
   }
 
-  async  extractOnclickLinks(page: Page , allowedDomains : string[]): Promise<string[]> {
 
+
+  async extractOnclickLinks(page: Page , allowedDomains : string[]): Promise<string[]> {
     // 1. 스크롤하면서 모든 a[onclick] 태그 수집
       const onclickScripts = await this.collectOnclickScriptsWithScroll(page);
       console.debug(onclickScripts);
 
-      // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
-      const redirectedUrls = await Promise.all(
+     // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
+    const redirectedUrls: string[] = []
+
+    const popUpPageHandler = async (target: Target) => {
+      try {
+        logger.debug(`[extract onclick link][popUpPageHandler] 팝업 페이지 이벤트 실행`);
+        const newPage = await target.page().catch(() => null);
+        if (!newPage || newPage.isClosed()) return;
+        if (newPage) {
+          logger.debug(`[extract onclick link] 팝업 페이지 이벤트 실행 ${newPage.url()}`);
+          redirectedUrls.push(newPage.url());
+          newPage.close().catch(() => { });
+        }
+      } catch (err) {
+        logger.error('[extract onclick link][popUpPageHandler] 팝업 페이지 이벤트 실행 중 오류 발생', err);
+      }
+    }
+
+      await Promise.all(
       onclickScripts.map(async (script) => {
       let tempPage: Page | undefined = undefined;
       try {
         tempPage = await page.browser().newPage();
-        await tempPage.goto(page.url(), { waitUntil: 'load', timeout: 10000 })
+
+        page.browser().once('targetcreated', popUpPageHandler)
+
+        await tempPage.goto(page.url(), { waitUntil: 'load', timeout: 3000 });
         await Promise.all(
-          [tempPage.evaluate(script).catch((err) => {
-          logger.debug(`[extract onclick link] 스크립트 실행 중 에러가 발생했습니다. ${script}`);
-        }),
-            tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch(() => { })
+          [ tempPage.evaluate(script).catch((err) => {}),
+            tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch((error) => { })
           ]
-        )
-        logger.debug(`[extract onclick link] 스크립트 실행 완료: ${tempPage.url()}`);
-        return tempPage.url();
+        ).then(() => {
+          if(tempPage) {
+            logger.debug(`[extract onclick link] 스크립트 실행 완료: ${tempPage.url}`);
+          }
+        })
+        page.browser().off('targetcreated', popUpPageHandler);
+        redirectedUrls.push(tempPage.url());
       } catch (err) {
         logger.error('[extract onclick link] 스크립트 url 수집 증 오류가 발생 했습니다.', err);
-        throw err;
+        // throw err;
       } finally {
         if (tempPage) {
-          await tempPage.close();
+          await tempPage.close().catch(()=>{});
         }
       }
-    })
+      })
   );
 
   return Array.from(

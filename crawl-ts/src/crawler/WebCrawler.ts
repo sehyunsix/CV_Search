@@ -72,8 +72,10 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
       .then((newPage) => {
         page = newPage;
         return page.on('dialog', async (dialog: Dialog) => {
-          await dialog.dismiss();
-        });
+          await dialog.dismiss().catch((error) => {
+            logger.error(`[Crawler][visitUrl] 다이얼로그 처리 중 오류 발생: ${error.message}`);
+          });
+        })
       })
       // 페이지 방문
       .then(() => {
@@ -184,7 +186,12 @@ async processQueue(): Promise<void> {
           continue;
         }
 
-        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain);
+        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain)
+          .catch((error) => {
+            logger.error(`[Crawler][process] URL 방문 중 오류 발생: ${error.message}`);
+            throw new Error("[Crawler][visitUrl]URL 방문 중 오류 발생");
+          });
+
         if (!visitResult.text) {
           logger.debug("[Crawler] 텍스트 없음, 건너뜀.");
           continue;
