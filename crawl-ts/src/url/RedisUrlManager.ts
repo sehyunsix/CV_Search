@@ -1,10 +1,13 @@
   // RedisUrlManager.ts
   import { IUrlManager } from './IUrlManager';
-  import { RobotsParsingResult } from './urlUtils';
+  import { isUrlAllowedWithRobots, RobotsParsingResult } from './urlUtils';
   import { defaultLogger as logger } from '../utils/logger';
   import { URL } from 'url';
-  import { RedisClientType } from 'redis';
-  import { redis } from '../database/RedisConnector';
+  import { RedisClientType ,createClient} from 'redis';
+  const redis :RedisClientType = createClient({
+   url: `redis://${process.env.REDIS_USERNAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/0`,
+   legacyMode: false, // 반드시 설정 !!
+  });
 
 export type UrlStatus = 'visited' | 'notvisited' | 'hasRecruitInfo' | 'noRecruitInfo';
 
@@ -88,12 +91,13 @@ export const enum URLSTAUS
         if (oldStatus) {
           await this.redisClient.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
           await this.redisClient.sRem(`${oldStatus}`, url);
-          await this.redisClient.hSet(`status:${domian}`, url, newStatus);
-          await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
-          await this.redisClient.sAdd(newStatus, url);
         }
+        await this.redisClient.hSet(`status:${domian}`, url, newStatus);
+        await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
+        await this.redisClient.sAdd(newStatus, url);
+
       } catch (error) {
-        logger.error(`URL 상태 설정 중 오류 (${url}):`, error);
+        logger.error(`[RedisUrlManager][setUrlStatus] URL 상태 설정 중 오류 (${url}):`, error);
         throw error;
       }
     }
@@ -117,6 +121,24 @@ export const enum URLSTAUS
         return null;
       }
     }
+
+
+      /**
+     * favicon 가져오기
+     * @param domain URL
+     * @returns URL 상태 또는 null
+     */
+      async getFavicon(domain: string): Promise<string | null> {
+        const redisKey = `favicon:${domain}`;
+
+        try {
+          const favicon = await this.redisClient.get(redisKey);
+          return favicon;
+        } catch (error) {
+          logger.error(`[RedisUrlManager][getFavicon] URL 상태 가져오기 중 오류 (${domain}):`, error);
+          return null;
+        }
+      }
 
     /**
      * URL에서 도메인 추출
@@ -260,8 +282,13 @@ export const enum URLSTAUS
         this.currentDomainIndex = (this.currentDomainIndex + 1) % this.availableDomains.length;
 
         const result = await this.getNextUrlFromDomain(domain);
+        if (result && await isUrlAllowedWithRobots(result.url, [domain]) === false) {
+          logger.debug(`[getNextUrl] 사용할 수 없는 url 입니다. ${result?.url}`);
+          // robots.txt에 의해 차단된 경우, 해당 URL을 visited 상태로 변경
+          await this.setURLStatus(result.url, URLSTAUS.NO_RECRUITINFO);
+          return null;
+        }
 
-        logger.debug(result?.url ?? '');
         return result;
       } catch (error) {
         const err = error as any;
@@ -335,7 +362,7 @@ export const enum URLSTAUS
         const urlOriginStatus = await redis.hGet(`status:${domain}`, url)
         // logger.debug(`add URL ${urlOriginStatus}`);
         if (!urlOriginStatus) {
-          logger.debug(`add URL ${url}`);
+          logger.debug(`[RedisUrlManger] add URL ${url}`);
           // URL을 도메인 세트에 추가
           await redis.sAdd(`urls:${domain}:${urlStatus}`, url);
           // status set에 추가

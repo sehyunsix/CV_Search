@@ -6,7 +6,7 @@ import { Browser, Page } from 'puppeteer';
  */
 export declare class ChromeBrowserManager implements IBrowserManager {
     browser?: Browser;
-    browserPID?: number;
+    browserPid?: number;
     /**
      * 브라우저 초기화
      * @returns 브라우저 인스턴스

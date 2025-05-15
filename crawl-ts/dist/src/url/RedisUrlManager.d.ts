@@ -58,6 +58,12 @@ export declare class RedisUrlManager implements IUrlManager {
      */
     getUrlStatus(url: string): Promise<UrlStatus | null>;
     /**
+   * favicon 가져오기
+   * @param domain URL
+   * @returns URL 상태 또는 null
+   */
+    getFavicon(domain: string): Promise<string | null>;
+    /**
      * URL에서 도메인 추출
      * @param url URL 문자열
      * @returns 도메인 또는 null

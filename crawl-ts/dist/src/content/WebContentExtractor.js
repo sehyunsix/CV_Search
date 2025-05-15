@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebContentExtractor = void 0;
 const logger_1 = require("../utils/logger");
 const urlUtils_1 = require("../url/urlUtils");
-const puppeteer_1 = require("puppeteer");
 /**
  * 웹 콘텐츠 추출 구현체
  * 페이지에서 콘텐츠와 링크를 추출합니다.
@@ -104,7 +103,7 @@ class WebContentExtractor {
             const pageUrl = page.url();
             const baseUrl = new URL(pageUrl).origin;
             const currentPath = new URL(pageUrl).pathname;
-            logger_1.defaultLogger.debug(`링크 추출 중... 기준 URL: ${pageUrl}, 허용 도메인: ${allowedDomains.join(', ')}`);
+            logger_1.defaultLogger.debug(`[extract links] 링크 추출 중... 기준 URL: ${pageUrl}, 허용 도메인: ${allowedDomains.join(', ')}`);
             // 페이지 내 모든 링크 추출 (절대 경로와 상대 경로 모두)
             const links = await page.evaluate((baseUrl, currentPath) => {
                 // 상대 경로를 절대 경로로 변환하는 함수
@@ -174,7 +173,7 @@ class WebContentExtractor {
                     return false;
                 }
             });
-            logger_1.defaultLogger.debug(`${uniqueLinks.length}개의 고유 URL 중 ${allowedLinks.length}개 URL이 도메인 필터를 통과했습니다.`);
+            logger_1.defaultLogger.debug(`[extract links] ${uniqueLinks.length}개의 고유 URL 중 ${allowedLinks.length}개 URL이 도메인 필터를 통과했습니다.`);
             return allowedLinks;
         }
         catch (error) {
@@ -191,20 +190,18 @@ class WebContentExtractor {
             let tempPage = undefined;
             try {
                 tempPage = await page.browser().newPage();
-                const html = await page.content();
-                await tempPage.setContent(html);
-                await tempPage.evaluate(script);
-                await tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch(() => { });
-                console.log(tempPage.url());
+                await tempPage.goto(page.url(), { waitUntil: 'load', timeout: 10000 });
+                await Promise.all([tempPage.evaluate(script).catch((err) => {
+                        logger_1.defaultLogger.debug(`[extract onclick link] 스크립트 실행 중 에러가 발생했습니다. ${script}`);
+                    }),
+                    tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch(() => { })
+                ]);
+                logger_1.defaultLogger.debug(`[extract onclick link] 스크립트 실행 완료: ${tempPage.url()}`);
                 return tempPage.url();
             }
             catch (err) {
-                console.error(`Error executing onclick script: ${script}`, err);
-                if (err instanceof puppeteer_1.ProtocolError || err instanceof puppeteer_1.TimeoutError) {
-                    logger_1.defaultLogger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
-                    throw err;
-                }
-                return null;
+                logger_1.defaultLogger.error('[extract onclick link] 스크립트 url 수집 증 오류가 발생 했습니다.', err);
+                throw err;
             }
             finally {
                 if (tempPage) {

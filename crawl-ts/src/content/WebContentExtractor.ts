@@ -1,7 +1,7 @@
 import { IContentExtractor } from './IContentExtractor';
 import { defaultLogger as logger } from '../utils/logger';
 import { isUrlAllowed } from '../url/urlUtils';
-import { Page ,ProtocolError, TimeoutError } from 'puppeteer';
+import { Page  } from 'puppeteer';
 
 /**
  * 웹 콘텐츠 추출 구현체
@@ -56,7 +56,6 @@ export class WebContentExtractor implements IContentExtractor {
           for (let i = 0; i < childNodes.length; i++) {
             text += extractTextFromNode(childNodes[i]) + ' ';
           }
-
           return text.trim();
         }
 
@@ -119,7 +118,7 @@ export class WebContentExtractor implements IContentExtractor {
       const baseUrl = new URL(pageUrl).origin;
       const currentPath = new URL(pageUrl).pathname;
 
-      logger.debug(`링크 추출 중... 기준 URL: ${pageUrl}, 허용 도메인: ${allowedDomains.join(', ')}`);
+      logger.debug(`[extract links] 링크 추출 중... 기준 URL: ${pageUrl}, 허용 도메인: ${allowedDomains.join(', ')}`);
 
       // 페이지 내 모든 링크 추출 (절대 경로와 상대 경로 모두)
       const links = await page.evaluate((baseUrl: string, currentPath: string) => {
@@ -199,7 +198,7 @@ export class WebContentExtractor implements IContentExtractor {
         }
       });
 
-      logger.debug(`${uniqueLinks.length}개의 고유 URL 중 ${allowedLinks.length}개 URL이 도메인 필터를 통과했습니다.`);
+      logger.debug(`[extract links] ${uniqueLinks.length}개의 고유 URL 중 ${allowedLinks.length}개 URL이 도메인 필터를 통과했습니다.`);
       return allowedLinks;
     } catch (error) {
       logger.error('링크 추출 중 오류',error);
@@ -208,30 +207,30 @@ export class WebContentExtractor implements IContentExtractor {
   }
 
   async  extractOnclickLinks(page: Page , allowedDomains : string[]): Promise<string[]> {
+
     // 1. 스크롤하면서 모든 a[onclick] 태그 수집
-    const onclickScripts = await this.collectOnclickScriptsWithScroll(page);
-    console.debug(onclickScripts);
-  // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
-  const redirectedUrls = await Promise.all(
-    onclickScripts.map(async (script) => {
+      const onclickScripts = await this.collectOnclickScriptsWithScroll(page);
+      console.debug(onclickScripts);
+
+      // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
+      const redirectedUrls = await Promise.all(
+      onclickScripts.map(async (script) => {
       let tempPage: Page | undefined = undefined;
       try {
         tempPage = await page.browser().newPage();
-        const html = await page.content();
-        await tempPage.setContent(html);
-
-        await tempPage.evaluate(script);
-        await tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch(() => {});
-        console.log(tempPage.url());
+        await tempPage.goto(page.url(), { waitUntil: 'load', timeout: 10000 })
+        await Promise.all(
+          [tempPage.evaluate(script).catch((err) => {
+          logger.debug(`[extract onclick link] 스크립트 실행 중 에러가 발생했습니다. ${script}`);
+        }),
+            tempPage.waitForNavigation({ waitUntil: 'load', timeout: 3000 }).catch(() => { })
+          ]
+        )
+        logger.debug(`[extract onclick link] 스크립트 실행 완료: ${tempPage.url()}`);
         return tempPage.url();
-
       } catch (err) {
-        console.error(`Error executing onclick script: ${script}`, err);
-        if (err instanceof ProtocolError || err instanceof TimeoutError) {
-            logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
-            throw err;
-        }
-        return null;
+        logger.error('[extract onclick link] 스크립트 url 수집 증 오류가 발생 했습니다.', err);
+        throw err;
       } finally {
         if (tempPage) {
           await tempPage.close();

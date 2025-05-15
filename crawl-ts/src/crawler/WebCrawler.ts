@@ -4,11 +4,11 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog ,Page ,Browser ,ProtocolError} from 'puppeteer';
-import { IMessageService } from '../message/IMessageService';
+import { Dialog ,Page} from 'puppeteer';
 import { IUrlManager } from '../url/IUrlManager';
-import { URLSTAUS } from '@url/RedisUrlManager';
-import { TimeoutError } from 'sequelize/types';
+import { URLSTAUS } from '../url/RedisUrlManager';
+import { Producer } from '../message/Producer';
+import { IRawContent, RawContentSchema } from '../models/RawContentModel';
 
   /**
    * 웹 크롤러 구현체
@@ -18,7 +18,7 @@ import { TimeoutError } from 'sequelize/types';
     browserManager: IBrowserManager;
     contentExtractor: IContentExtractor;
     urlManager: IUrlManager;
-    messageService: IMessageService;
+    rawContentProducer: Producer;
 
     /**
      * 웹 크롤러 생성자
@@ -27,14 +27,14 @@ import { TimeoutError } from 'sequelize/types';
     constructor(options: {
       browserManager: IBrowserManager;
       contentExtractor: IContentExtractor;
-      messageService: IMessageService;
+      rawContentProducer: Producer;
       urlManager: IUrlManager;
 
     }) {
       this.browserManager = options.browserManager;
       this.contentExtractor = options.contentExtractor;
       this.urlManager = options.urlManager;
-      this.messageService = options.messageService;
+      this.rawContentProducer = options.rawContentProducer;
     }
 
     /**
@@ -42,216 +42,177 @@ import { TimeoutError } from 'sequelize/types';
      */
     async initialize(): Promise<void> {
       // 데이터베이스 연결
-      await this.messageService.connect();
+      await this.rawContentProducer.connect();
 
       await this.urlManager.connect();
 
-      await this.browserManager.initBrowser();
+      await this.browserManager.initBrowser(10, 3000);
 
       logger.debug('크롤러 초기화 완료');
     }
 
-    /**
-   * URL 방문 및 데이터 추출
+  /**
+   * 페이지 방문 및 데이터 추출
    * @param urlInfo 방문할 URL 정보
    * @returns 방문 결과
    */
-  async visitUrl(urlInfo: { url: string; domain: string }): Promise<SubUrl> {
-    const { url, domain } = urlInfo;
-    logger.debug(`=== URL 방문 시작: ${url} ===`);
+  async visitUrl(url: string, domain: string ): Promise<SubUrl> {
+
+
+    logger.debug(`[Crawler][visitUrl] URL 방문 시작: ${url}`);
     const startTime = Date.now();
 
     let subUrlResult = new SubUrl({
       url: url,
       domain: domain,
-      visitedAt: new Date(),
     });
-    let page: Page;
-    try {
-        page = await this.browserManager.getNewPage();
-    } catch (error) {
-        if (error instanceof Error) {
-          logger.error('브라우저 페이지 생성 중 에러', { error: error.message });
-              subUrlResult.success = false;
-                if (error instanceof ProtocolError ) {
-                  logger.error('프로토콜 에러 발생: 브라우저 연결 문제가 있을 수 있습니다');
-                  throw error;
-                }
-            }
-            return subUrlResult;
-      }
-    try {
-      // 새 페이지 열기
-      try {
-        // 자바스크립트 대화상자 처리
-        page.on('dialog', async (dialog: Dialog) => {
+    let page : Page;
+    //페이지 생성
+    return this.browserManager.getNewPage()
+      .then((newPage) => {
+        page = newPage;
+        return page.on('dialog', async (dialog: Dialog) => {
           await dialog.dismiss();
         });
-      } catch(error)
-      {
-        logger.error('다이어로그 처리 중 에러', error);
-      }
-      try {
-        // 페이지 로드
-        await page.goto(url, {
+      })
+      // 페이지 방문
+      .then(() => {
+        return  page.goto(url, {
           waitUntil: 'networkidle2',
           timeout: 20000 // 20초
-        });
-      } catch (error) {
-        logger.error('브라우저 페이지 이동 중', error);
+        })
+      })
+      //페이지  내용 추출
+      .then(() => {
+        subUrlResult.finalUrl = page.url();
+        subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
+        return this.contentExtractor.extractPageContent(page).then((results) => ({ page, results }));
+      })
+      //페이지  링크 추출
+      .then((context) => {
+        subUrlResult.title = context.results.title;
+        subUrlResult.text = context.results.text;
+        return this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({ ...context, results }));
+      })
+      .then((context) => {
+      //페이지  클릭 링크  추출
+        subUrlResult.herfUrls = context.results;
+        return this.contentExtractor.extractOnclickLinks(context.page, [domain]).then((results) => ({ ...context, results }));
+      })
+      .then((context) => {
+        subUrlResult.onclickUrls = context.results;
+        subUrlResult.crawledUrls = Array.from(new Set([
+          ...subUrlResult.herfUrls,
+          ...subUrlResult.onclickUrls
+        ]));
+        subUrlResult.crawlStats = {
+          total: subUrlResult.crawledUrls.length,
+          href: subUrlResult.herfUrls?.length || 0,
+          onclick: subUrlResult.onclickUrls?.length || 0,
+          blocked_by_robots: 0,
+          allowed_after_robots: subUrlResult.crawledUrls.length
+        };
+        subUrlResult.success = true;
+        return context.page.close().then(() => subUrlResult);
+      }).catch((error) => {
+        logger.error(`[Crawler][visitUrl] URL 방문 중 오류 발생: ${error.message}`);
         throw error;
+      })
+      .finally(() => {
+        return page.close().catch((error) => {
+          logger.error(`[Crawler][visitUrl] 페이지 닫기 중 오류 발생: ${error.message}`);
+        })
       }
+      )
 
-      // 현재 URL 가져오기 (리다이렉트 가능성)
-      subUrlResult.finalUrl = page.url();
-      // 최종 URL의 도메인 확인
-      subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
 
-      try {
-        // 페이지 내용 추출
-        subUrlResult.pageContent = await this.contentExtractor.extractPageContent(page);
-        subUrlResult.title = subUrlResult.pageContent.title;
-        subUrlResult.text = subUrlResult.pageContent.text;
-      } catch (error) {
-        logger.error('페이지 내용 추출 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'content_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-      }
-
-      try {
-        // 기본 링크 추출 (a 태그)
-        const extractStartTime = Date.now();
-        subUrlResult.herfUrls = await this.contentExtractor.extractLinks(page, [domain]);
-        const extractRuntime = Date.now() - extractStartTime;
-        logger.eventInfo('extract_herf', { url, runtime: extractRuntime });
-      } catch (error) {
-        logger.error('링크 추출 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'link_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-      }
-
-      try {
-        // JavaScript 실행을 통한 추가 URL 추출 (onclick 이벤트 등)
-        // 이 예제에서는 간소화를 위해 생략하고 빈 배열 할당
-        subUrlResult.onclickUrls = await this.contentExtractor.extractOnclickLinks(page, [domain]);
-        logger.debug('JavaScript 이벤트 처리 생략 (간소화된 구현)');
-      } catch (error) {
-        logger.error('JavaScript 실행 중 오류:', error);
-        subUrlResult.errors.push({
-          type: 'script_extraction',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          url: subUrlResult.finalUrl
-        });
-        throw error;
-      }
-      subUrlResult.success = true;
-      // console.log(subUrlResult.herfUrls);
-      // console.log(subUrlResult.onclickUrls);
-      // 모든 발견된 URL 병합
-      subUrlResult.crawledUrls = Array.from(new Set([
-        ...subUrlResult.herfUrls,
-        ...subUrlResult.onclickUrls
-      ]));
-
-      // 통계 정보 업데이트
-      subUrlResult.crawlStats = {
-        total: subUrlResult.crawledUrls.length,
-        href: subUrlResult.herfUrls?.length || 0,
-        onclick: subUrlResult.onclickUrls?.length || 0,
-        blocked_by_robots: 0,
-        allowed_after_robots: subUrlResult.crawledUrls.length
-      };
-
-      const runtime = Date.now() - startTime;
-      logger.eventInfo('visit_url', { runtime });
-
-      return subUrlResult;
-    } catch (error) {
-
-      if (error instanceof ProtocolError || error instanceof TimeoutError) {
-            throw error;
-      }
-      // 오류 정보를 결과 객체에 추가
-      subUrlResult.success = false;
-      subUrlResult.error = error instanceof Error ? error.message : String(error);
-      subUrlResult.errors.push({
-        type: 'page_visit',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-
-      const runtime = Date.now() - startTime;
-      logger.eventError('visit_url', { runtime, error: subUrlResult.error });
-      return subUrlResult;
-    }
-    finally {
-      try {
-        if (page) {
-          await page.close();
-          logger.debug('페이지 닫기 완료');
-        }
-      } catch (pageCloseError) {
-        logger.error('페이지 닫기 중 오류:', pageCloseError);
-      }
-    }
   }
 
-  async saveVisitResult(result: SubUrl): Promise<boolean> {
-    await this.messageService.sendVisitResult(result);
-    result.crawledUrls.map((url) => {
+  /**
+   * 방문한 URL 링크 레디스에 저장
+   * @param result 방문 결과
+   * @returns
+   */
+  async saveLinkUrls(result: SubUrl): Promise<boolean> {
+
+    return await Promise.all(result.crawledUrls.map((url) => {
       this.urlManager.addUrl(url, result.domain, URLSTAUS.NOT_VISITED)
-    })
-    await this.urlManager.setURLStatus(result.url, URLSTAUS.VISITED);
-    return true;
+    })).then(() => true)
+      .catch((error) => {
+        logger.error(`[Redis] 링크 URL 저장 중 오류 발생: ${error.message}`);
+        throw error;
+      }
+    )
+    }
+
+
+  /**
+   * URL에서 추출한 RawContent RabbitMQ에 전송
+   * @param result 방문 결과
+   * @returns
+   */
+    async sendRawContent(result: SubUrl): Promise<boolean> {
+
+    if (RawContentSchema.safeParse(result).success === false) {
+      logger.debug('[RabbitMQ] Invalid message format:', result);
+      return false;
+    }
+
+    const rawContent: IRawContent = {
+      url: result.url,
+      title: result.title!,
+      domain: result.domain,
+      text: result.text!,
+    };
+
+    return this.rawContentProducer.sendMessage(rawContent)
+      .then(() => true)
+      .catch((error) => {
+        logger.error(`[RabbitMQ] RAW CONTENT 전송 중 오류 발생: ${error.message}`);
+        throw error;
+      });
   }
+
+
 
 async processQueue(): Promise<void> {
-    let visitCount = 0;
     while (true) {
       try {
         const nextUrlInfo = await this.urlManager.getNextUrl();
         if (!nextUrlInfo) {
-
-          logger.debug('더 이상 방문할 URL이 없습니다.');
-          break;
+          logger.debug("[Crawler] 큐에 처리할 URL이 없습니다.");
+          continue;
         }
 
-        visitCount++;
-
-        logger.debug(`URL ${visitCount} 처리 중...`);
-
-        const visitResult = await this.visitUrl(nextUrlInfo);
-
+        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain);
         if (!visitResult.text) {
-          logger.debug("텍스트 없음, 건너뜀.");
+          logger.debug("[Crawler] 텍스트 없음, 건너뜀.");
           continue;
         }
 
         const isSaveSuccess = await this.urlManager.saveTextHash(visitResult.text);
         if (isSaveSuccess===false) {
-          logger.debug("중복된 텍스트, 저장하지 않음.");
+          logger.debug("[Crawler] 중복된 텍스트, 저장하지 않음.");
           this.urlManager.setURLStatus(visitResult.url, URLSTAUS.NO_RECRUITINFO);
           continue;
         }
 
-        await this.saveVisitResult(visitResult);
+        await this.saveLinkUrls(visitResult).then(() => {
+          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+        });
 
-        // if (visitCount < this.maxUrls) {
-        //   logger.debug(`다음 URL 처리 전 ${this.delayBetweenRequests}ms 대기...`);
-        //   await new Promise(resolve => setTimeout(resolve, this.delayBetweenRequests));
-        // }
+        await this.sendRawContent(visitResult).then(() => {
+          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+        });
+
       } catch (error) {
-        throw error;
+        if (error instanceof Error) {
+          await this.browserManager.closeBrowser();
+          await this.browserManager.initBrowser(10, 3000);
+          logger.error(`[Crawler][process] 큐 처리 중 오류 발생: ${error.message}`);
+        }
       }
     }
-    logger.debug(`큐 처리 완료. 총 ${visitCount}개 URL 방문`);
 }
 
 

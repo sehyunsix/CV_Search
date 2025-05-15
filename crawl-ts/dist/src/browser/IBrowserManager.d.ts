@@ -8,7 +8,7 @@ export interface IBrowserManager {
      * 브라우저 초기화
      * @returns 브라우저 인스턴스
      */
-    initBrowser(): Promise<Browser | undefined>;
+    initBrowser(retry: number, delay: number): Promise<Browser | undefined>;
     /**
      * 브라우저 종료
      */
