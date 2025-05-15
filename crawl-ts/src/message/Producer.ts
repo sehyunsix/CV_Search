@@ -1,6 +1,6 @@
 
 import { defaultLogger as logger } from '../utils/logger';
-import { IRawContent, RawContentSchema } from '@models/RawContentModel';
+import { IRawContent, RawContentSchema } from '../models/RawContentModel';
 import { Messenger } from './Messenger';
 
 export class Producer extends Messenger {

@@ -5,8 +5,9 @@ const CocurrentCralwer_1 = require("../crawler/CocurrentCralwer");
 const ChromeBrowserManager_1 = require("../browser/ChromeBrowserManager");
 const WebContentExtractor_1 = require("../content/WebContentExtractor");
 const RedisUrlManager_1 = require("../url/RedisUrlManager");
-const MessageService_1 = require("../message/MessageService");
 const logger_1 = require("../utils/logger");
+const Producer_1 = require("@message/Producer");
+const enums_1 = require("@message/enums");
 /**
  * ConcurrentWebCrawler 실행 스크립트
  * 여러 개의 작업자를 이용해 병렬로 URL을 처리합니다.
@@ -18,13 +19,13 @@ async function runConcurrentCrawler() {
         const browserManager = new ChromeBrowserManager_1.ChromeBrowserManager();
         const contentExtractor = new WebContentExtractor_1.WebContentExtractor();
         const urlManager = new RedisUrlManager_1.RedisUrlManager();
-        const messageService = new MessageService_1.MessageService();
+        const rawContentProducer = new Producer_1.Producer(enums_1.QueueNames.VISIT_RESULTS);
         // 2. WebCrawler 인스턴스 생성
         const webCrawler = new WebCrawler_1.WebCrawler({
             browserManager,
             contentExtractor,
             urlManager,
-            messageService
+            rawContentProducer,
         });
         // 3. 동시성 수준 설정 (환경 변수에서 가져오거나 기본값 사용)
         const concurrencyLevel = parseInt(process.env.CONCURRENCY_LEVEL || '4');

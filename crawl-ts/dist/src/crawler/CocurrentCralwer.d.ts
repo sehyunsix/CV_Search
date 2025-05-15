@@ -4,5 +4,4 @@ export declare class ConcurrentWebCrawler {
     private concurrency;
     constructor(crawler: WebCrawler, concurrency?: number);
     run(): Promise<void>;
-    private processUrls;
 }

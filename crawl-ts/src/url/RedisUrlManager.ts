@@ -97,7 +97,7 @@ export const enum URLSTAUS
         await this.redisClient.sAdd(newStatus, url);
 
       } catch (error) {
-        logger.error(`URL 상태 설정 중 오류 (${url}):`, error);
+        logger.error(`[RedisUrlManager][setUrlStatus] URL 상태 설정 중 오류 (${url}):`, error);
         throw error;
       }
     }

@@ -160,7 +160,17 @@ MysqlRecruitInfoSequelize.init(
       createdAt: 'created_at',
       updatedAt: 'last_updated_at',// createdAt, updatedAt 자동 관리
       underscored: true, // 스네이크_케이스 컬럼명 사용
+      indexes: [
+        {
+          unique: true,
+          fields: ['url'  ],
+          name: 'idx_url_prefix',
+          using: 'BTREE',
+
+        }
+      ]
     }
+
 );
 
 

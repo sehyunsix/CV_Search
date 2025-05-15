@@ -6,9 +6,9 @@ import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
 import { Dialog ,Page} from 'puppeteer';
 import { IUrlManager } from '../url/IUrlManager';
-import { URLSTAUS } from '@url/RedisUrlManager';
-import { Producer } from '@message/Producer';
-import { IRawContent, RawContentSchema } from '@models/RawContentModel';
+import { URLSTAUS } from '../url/RedisUrlManager';
+import { Producer } from '../message/Producer';
+import { IRawContent, RawContentSchema } from '../models/RawContentModel';
 
   /**
    * 웹 크롤러 구현체

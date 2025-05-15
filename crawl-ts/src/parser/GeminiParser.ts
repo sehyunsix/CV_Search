@@ -356,12 +356,12 @@ export class GeminiParser implements IParser {
           },
         });
         // API 호출로 채용 정보 파싱
-        logger.debug('Gemini API 요청 시작...');
+        logger.debug('[GeminiParser][parseRawContentRetry] Gemini API 요청 시작...');
         const result =await model.generateContent(geminiRecruitInfoPrompt(rawContent.text))
           .then((result) => result.response?.text())
           .catch(
             (error) => {
-              logger.error(`Gemini API에서 텍스트 응답을 받지 못했습니다.${attempt}/${retryNumber}`);
+              logger.error(`[GeminiParser][parseRawContentRetry] Gemini API에서 텍스트 응답을 받지 못했습니다.${attempt}/${retryNumber}`);
                if (retryNumber === attempt) {
                 throw error;
               }
@@ -369,7 +369,7 @@ export class GeminiParser implements IParser {
           )
           .then((responseText) => {
             if (!responseText) {
-              logger.error(`Gemini API에서 빈 응답을 받았습니다.${attempt}/${retryNumber}`);
+              logger.error(`[GeminiParser][parseRawContentRetry] Gemini API에서 빈 응답을 받았습니다.${attempt}/${retryNumber}`);
               throw new ParseError('Gemini API에서 빈 응답을 받았습니다.');
             }
 

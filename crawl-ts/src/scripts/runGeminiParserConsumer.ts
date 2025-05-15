@@ -3,10 +3,10 @@ import { GeminiParser, ParseError } from '../parser/GeminiParser';
 import { Consumer } from '../message/Consumer';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRawContent } from '../models/RawContentModel';
-import { QueueNames } from '@message/enums';
+import { QueueNames } from '../message/enums';
 import { RedisUrlManager } from '../url/RedisUrlManager';
 import Redis from 'ioredis/built';
-import { RecruitInfoRepository } from '@database/RecruitInfoRepository';
+import { RecruitInfoRepository } from '../database/RecruitInfoRepository';
 
 
 
@@ -20,7 +20,7 @@ dotenv.config();
   const consumer = new Consumer(QueueNames.VISIT_RESULTS);
   const urlManager = new RedisUrlManager();
   const recruitInfoRepository = new RecruitInfoRepository();
-  recruitInfoRepository.initialize();
+  // recruitInfoRepository.initialize();
   await consumer.connect();
   await urlManager.connect();
   consumer.handleLiveMessage(
@@ -28,10 +28,11 @@ dotenv.config();
       if (msg) {
         const rawContent = JSON.parse(msg.content.toString()) as IRawContent;
         // verify
-        await parser.parseRawContentRetry(rawContent, 3)
+        await parser.parseRawContentRetry(rawContent, 100, 2000)
           .then(
             (parseContent) => {
               if (!parseContent) { throw new ParseError("parsesContent가 존재하지 않습니다.") }
+              if (!parseContent.job_description) { throw new ParseError("job_description이 존재하지 않습니다.") }
               return urlManager.getFavicon(rawContent.url).then((favicon) => ({ favicon, parseContent }))
             }
           )
@@ -50,8 +51,8 @@ dotenv.config();
                 logger.error(`[consumer] Parse  중 에러 : ${error.message}`);
               } else {
                 logger.error(`[consumer] 저장 중 에러 ${error}`);
+                throw error;
               }
-              throw error;
             }
           )
       }

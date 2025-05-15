@@ -4,8 +4,8 @@ import { ChromeBrowserManager } from '../browser/ChromeBrowserManager';
 import { WebContentExtractor } from '../content/WebContentExtractor';
 import { RedisUrlManager, URLSTAUS } from '../url/RedisUrlManager';
 import { defaultLogger as logger } from '../utils/logger';
-import { Producer } from '@message/Producer';
-import { QueueNames } from '@message/enums';
+import { Producer } from '../message/Producer';
+import { QueueNames } from '../message/enums';
 
 /**
  * ConcurrentWebCrawler 실행 스크립트

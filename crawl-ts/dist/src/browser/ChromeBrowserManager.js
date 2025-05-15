@@ -44,42 +44,38 @@ class ChromeBrowserManager {
          * @returns 브라우저 인스턴스
          */ this.isLaunching = false;
     }
-    // async initBrowser(): Promise<Browser | undefined> {
-    //   if (this.browser && this.browser.isConnected()) return this.browser;
-    //   if (this.isLaunching) {
-    //     while (this.isLaunching) {
-    //       await new Promise(res => setTimeout(res, 100));
-    //     }
-    //     return this.browser;
-    //   }
-    //   this.isLaunching = true;
-    //   try {
-    //     this.browser = await puppeteer.launch({
-    //       headless: CONFIG.BROWSER.HEADLESS,
-    //       args: CONFIG.BROWSER.LAUNCH_ARGS,
-    //       timeout: 10000,
-    //     });
-    //     return this.browser;
-    //   } catch (err) {
-    //     logger.error("브라우저 생성 실패", err);
-    //     return undefined;
-    //   } finally {
-    //     this.isLaunching = false;
-    //   }
-    // }
     async initBrowser(retries = 3, delay = 2000) {
         for (let i = 0; i < retries; i++) {
+            if (this.isLaunching) {
+                logger_1.defaultLogger.debug('[BrowserManager] 브라우저가 이미 초기화 중입니다. 대기 중...');
+                await new Promise(res => setTimeout(res, delay));
+                continue;
+            }
+            if (this.browser) {
+                logger_1.defaultLogger.debug('[BrowserManager][initBrowser] 이미 초기화된 브라우저가 있습니다. 재사용 중...');
+                return this.browser;
+            }
             try {
+                logger_1.defaultLogger.debug('[BrowserManager][initBrowser] 브라우저 초기화 중...');
+                this.isLaunching = true;
                 this.browser = await puppeteer_1.default.launch({
                     headless: config_1.default.BROWSER.HEADLESS,
                     args: config_1.default.BROWSER.LAUNCH_ARGS,
-                    timeout: 10000,
+                    timeout: 30000,
                 });
+                const browserProcess = this.browser.process();
+                if (browserProcess) {
+                    const pid = browserProcess.pid;
+                    logger_1.defaultLogger.info(`[BrowserManager][initBrowser] Puppeteer browser launched with PID: ${pid}`);
+                    this.browserPid = pid; // 원하면 클래스 멤버로 저장 가능
+                }
+                this.isLaunching = false;
+                logger_1.defaultLogger.debug('[BrowserManager][initBrowser] 브라우저 초기화 완료');
                 return this.browser;
             }
             catch (err) {
                 if (err instanceof Error) {
-                    logger_1.defaultLogger.warn(`puppeteer.launch() 실패 [시도 ${i + 1}/${retries}]: ${err.message}`);
+                    logger_1.defaultLogger.error(`puppeteer.launch() 실패 [시도 ${i + 1}/${retries}]: ${err.message}`);
                     if (i === retries - 1)
                         throw new Error("브라우저 재시도 실패");
                     await new Promise(res => setTimeout(res, delay));
@@ -101,11 +97,13 @@ class ChromeBrowserManager {
      */
     async closeBrowser() {
         if (this.browser) {
-            logger_1.defaultLogger.debug('브라우저 정리 중...');
+            logger_1.defaultLogger.debug('[BrowserManager] 브라우저 정리 중...');
             try {
-                await this.browser.close();
+                await this.browser.close().catch((err) => {
+                    logger_1.defaultLogger.error('[BrowserManager] 브라우저 종료 중 오류:', err);
+                });
                 this.browser = undefined;
-                logger_1.defaultLogger.debug('브라우저가 정상적으로 종료되었습니다.');
+                logger_1.defaultLogger.debug('[BrowserManager] 브라우저가 정상적으로 종료되었습니다.');
             }
             catch (err) {
                 logger_1.defaultLogger.error('브라우저 종료 중 오류:', err);
@@ -113,7 +111,18 @@ class ChromeBrowserManager {
             finally {
                 // Google Chrome for Testing 프로세스 강제 종료
                 this.browser = undefined;
-                this.killChromeProcesses();
+                if (this.browserPid) {
+                    try {
+                        process.kill(this.browserPid, 'SIGKILL'); // 강제 종료
+                        logger_1.defaultLogger.debug(`[BrowserManager] 브라우저 PID(${this.browserPid}) 강제 종료 성공`);
+                    }
+                    catch (err) {
+                        logger_1.defaultLogger.warn(`[BrowserManager] 브라우저 PID(${this.browserPid}) 강제 종료 실패: ${err}`);
+                    }
+                    finally {
+                        this.browserPid = undefined;
+                    }
+                }
             }
         }
     }

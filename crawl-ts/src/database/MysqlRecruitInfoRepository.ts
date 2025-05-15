@@ -4,6 +4,7 @@ import { MysqlRecruitInfoSequelize  ,MysqlJobRegionSequelize} from '../models/My
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 import axios from 'axios';
+import { runCLI } from 'jest/build';
 /**
  * MySQL 데이터베이스 서비스 클래스
  * 채용 정보를 MySQL 데이터베이스에 저장하고 관리하는 서비스
@@ -22,9 +23,12 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
     try {
       let record: CreateDBRecruitInfoDTO|null;
       let created: boolean|null;
-      [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitInfo, { transaction });
-      record = await MysqlRecruitInfoSequelize.findOne({ where: { url: recruitInfo.url } });
-      if (recruitInfo.region_id && record && record.id) {
+      [record, created] = await MysqlRecruitInfoSequelize.upsert(recruitInfo, { transaction ,returning: true });
+      record = await MysqlRecruitInfoSequelize.findOne({ where: { url: recruitInfo.url }, transaction });
+      if (!record) {
+        throw new Error('[MysqlRecruitInfoRepository][createRecruitInfo] 채용 정보 저장 실패: 레코드가 존재하지 않음');
+      }
+      if (recruitInfo.region_id) {
         for (const region_id of recruitInfo.region_id) {
          await MysqlJobRegionSequelize.upsert(
                     {
@@ -36,11 +40,12 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
         }
       }
       await transaction.commit();
-      return record!;
+      logger.debug('[MysqlRecruitInfoRepository][createRecruitInfo] 채용 정보 저장 성공:', recruitInfo.url);
+      return recruitInfo;
 
     } catch (error) {
       await transaction.rollback();
-      logger.error('채용 정보 저장 중 오류:', error);
+      logger.error('[MysqlRecruitInfoRepository][createRecruitInfo] 채용 정보 저장 중 오류:', error);
       throw error;
     }
   }
