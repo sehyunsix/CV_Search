@@ -166,6 +166,7 @@ describe('WebContentExtractor', () => {
              // Add more conditions if needed for other script types
              return Promise.resolve(); // evaluate returns a promise
         }),
+        goto: jest.fn().mockResolvedValue(undefined), // Assume navigation is successful
         waitForNavigation: jest.fn().mockResolvedValue(null), // Assume navigation completes
         url: jest.fn().mockReturnValue(baseUrl), // Initial URL before evaluate changes it
         close: jest.fn().mockResolvedValue(undefined),

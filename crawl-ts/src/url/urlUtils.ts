@@ -3,6 +3,7 @@
  */
 import axios, { AxiosResponse } from 'axios';
 import { URL } from 'url';
+import { defaultLogger as logger } from '../utils/logger';
 
 // robots-parser 타입 정의
 export interface RobotsParser {
@@ -66,6 +67,10 @@ export function isUrlAllowed(url: string, allowedDomains: string[] = []): boolea
       || url.endsWith('.mp3')
       || url.endsWith('.m4a')
       || url.endsWith('.wav')
+      || url.endsWith('.hwp')
+      || url.includes('download')
+      || url.includes('Filedownload')
+      || url.includes('downloadFile')
     ) return false;
 
 
@@ -90,32 +95,33 @@ export function isUrlAllowed(url: string, allowedDomains: string[] = []): boolea
  * @param domain 도메인 이름
  * @returns robots.txt 파싱 결과
  */
-export async function parseRobotsTxt(domain: string): Promise<RobotsParsingResult> {
+export async function parseRobotsTxt(domain: string): Promise<RobotsParsingResult|undefined> {
   try {
+    logger.debug(`[robots.txt] ${domain} robots.txt 다운로드를 시작합니다.`);
     // robots-parser 모듈 동적 로드
     const robotsParserModule = await import('robots-parser');
     const robotsParser = robotsParserModule.default || robotsParserModule;
-
     const robotsUrl = `https://${domain}/robots.txt`;
 
-    const response = await axios.get<string>(robotsUrl, {
-      timeout: 5000,
-      validateStatus: status => status === 200 || status === 404 // 404도 허용 (robots.txt가 없는 경우)
-    });
+      const response = await axios.get<string>(robotsUrl, {
+        timeout: 5000,
+        validateStatus: status => status === 200 || status === 404 // 404도 허용 (robots.txt가 없는 경우)
+      });
+
 
     if (response.status === 200) {
+      logger.debug(`[robots.txt] ${domain} robots.txt를 발견했습니다..`);
       const parser = robotsParser(robotsUrl, response.data) as RobotsParser;
       return { parser };
-    } else if (response.status === 404) {
-      // robots.txt가 없는 경우 빈 규칙으로 파서 생성 (모든 URL 허용)
+    }
+    else{
+      logger.debug(`[robots.txt] ${domain} robots.txt가 없습니다.`);
       const parser = robotsParser(robotsUrl, '') as RobotsParser;
       return { parser };
-    } else {
-      return { error: new Error(`robots.txt 요청 실패: HTTP ${response.status}`) };
     }
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { error: new Error(`robots.txt 파싱 중 오류: ${errorMessage}`) };
+    logger.error(`[robots.txt] ${domain} robots.txt 다운로드 중 오류:`, error);
   }
 }
 
@@ -129,9 +135,7 @@ export async function parseRobotsTxt(domain: string): Promise<RobotsParsingResul
 export async function isUrlAllowedWithRobots(
   url: string,
   allowedDomains: string[] = [],
-  robotsCache: Record<string, RobotsParsingResult> = {}
 ): Promise<boolean> {
-  try {
     // 기본 URL 허용 확인
     if (!isUrlAllowed(url, allowedDomains)) {
       return false;
@@ -140,20 +144,14 @@ export async function isUrlAllowedWithRobots(
     const domain = extractDomain(url);
     if (!domain) return false;
 
-    // robots.txt 캐시에 없으면 로드
-    if (!robotsCache[domain]) {
-      robotsCache[domain] = await parseRobotsTxt(domain);
-    }
 
-    // robots.txt 파서가 있으면 확인
-    if (robotsCache[domain]?.parser) {
-      return robotsCache[domain].parser.isAllowed(url, 'puppeteer');
-    }
-
+    return await parseRobotsTxt(domain).then((result) => {
+      if (!result || !result.parser) {return true;}
+      return result.parser.isAllowed(url, 'puppeteer')
+    }).catch((error) => {
+      logger.error(`[robots.txt] ${domain} robots.txt 파싱 중 오류:`, error);
+      return true
+    })
     // 오류가 있거나 파서가 없으면 기본 허용 규칙 적용
-    return true;
-  } catch (error) {
-    console.error(`robots.txt 확인 오류: ${url}`, error);
-    return true; // 오류 시 허용 (덜 제한적 접근)
-  }
+
 }
