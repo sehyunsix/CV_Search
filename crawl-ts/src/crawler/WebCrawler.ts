@@ -4,11 +4,12 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import { Dialog ,Page} from 'puppeteer';
+import puppeteer, { Dialog ,Page, TimeoutError} from 'puppeteer';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '../url/RedisUrlManager';
 import { Producer } from '../message/Producer';
 import { IRawContent, RawContentSchema } from '../models/RawContentModel';
+import { timeoutAfter } from '../browser/ChromeBrowserManager';
 
   /**
    * 웹 크롤러 구현체
@@ -56,7 +57,7 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
    * @param urlInfo 방문할 URL 정보
    * @returns 방문 결과
    */
-  async visitUrl(url: string, domain: string ): Promise<SubUrl> {
+  async visitUrl(url: string, domain: string ): Promise<SubUrl | void> {
 
 
     logger.debug(`[Crawler][visitUrl] URL 방문 시작: ${url}`);
@@ -70,6 +71,7 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
     //페이지 생성
     return this.browserManager.getNewPage()
       .then((newPage) => {
+      logger.debug(`[Crawler][visitUrl] URL 페이지 생성: ${url}`);
         page = newPage;
         return page.on('dialog', async (dialog: Dialog) => {
           await dialog.dismiss().catch((error) => {
@@ -79,13 +81,19 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
       })
       // 페이지 방문
       .then(() => {
+        if (page.isClosed()===true) {
+          logger.error(`[Crawler][visitUrl] 페이지가 이미 닫혀있음: ${url}`);
+          throw new Error(`[Crawler][visitUrl] 페이지가 이미 닫혀있음: ${url}`);
+        }
+        logger.debug(`[Crawler][visitUrl] URL 페이지 방문 ${url}`);
         return  page.goto(url, {
-          waitUntil: 'networkidle2',
+          waitUntil: 'load',
           timeout: 20000 // 20초
         })
       })
       //페이지  내용 추출
       .then(() => {
+        logger.debug(`[Crawler][visitUrl] URL 페이지 추출 ${url}`);
         subUrlResult.finalUrl = page.url();
         subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
         return this.contentExtractor.extractPageContent(page).then((results) => ({ page, results }));
@@ -99,7 +107,7 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
       .then((context) => {
       //페이지  클릭 링크  추출
         subUrlResult.herfUrls = context.results;
-        return this.contentExtractor.extractOnclickLinks(context.page, [domain]).then((results) => ({ ...context, results }));
+        return timeoutAfter(this.contentExtractor.extractOnclickLinks(context.page, [domain]).then((results) => ({ ...context, results })) ,60_000, new TimeoutError('onclick link 수집 시간 초과'));
       })
       .then((context) => {
         subUrlResult.onclickUrls = context.results;
@@ -115,15 +123,30 @@ import { IRawContent, RawContentSchema } from '../models/RawContentModel';
           allowed_after_robots: subUrlResult.crawledUrls.length
         };
         subUrlResult.success = true;
-        return context.page.close().then(() => subUrlResult);
+        return subUrlResult
       }).catch((error) => {
-        logger.error(`[Crawler][visitUrl] URL 방문 중 오류 발생: ${error.message}`);
+        // if (error instanceof TimeoutError) {
+        //   logger.error(`[Crawler][visitUrl] URL 방문 시간 초과 ${url}: ${error.message}`);
+        //   return;
+        // }
+        logger.error(`[Crawler][visitUrl] URL 방문 중 오류 발생 ${url}: ${error.message}`);
         throw error;
+
       })
       .finally(() => {
-        return page.close().catch((error) => {
-          logger.error(`[Crawler][visitUrl] 페이지 닫기 중 오류 발생: ${error.message}`);
-        })
+        if (!page) {
+          logger.error(`[Crawler][visitUrl] 페이지가 생성되지 않았습니다: ${url}`);
+          return;
+        }
+        if (page.isClosed() === true) {
+          logger.error(`[Crawler][visitUrl] 페이지가 이미 닫혀있음: ${url}`);
+          return
+        }
+        else {
+          page.close().catch((error) => {
+            logger.error(`[Crawler][visitUrl] 페이지 닫기 중 오류 발생 ${url}: ${error.message}`);
+          })
+        }
       }
       )
 
@@ -189,10 +212,12 @@ async processQueue(): Promise<void> {
         const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain)
           .catch((error) => {
             logger.error(`[Crawler][process] URL 방문 중 오류 발생: ${error.message}`);
-            throw new Error("[Crawler][visitUrl]URL 방문 중 오류 발생");
+            this.urlManager.setURLStatus(nextUrlInfo.url, URLSTAUS.NOT_VISITED);
+            throw new Error("[Crawler][process] 큐 처리 중 오류 발생");
+
           });
 
-        if (!visitResult.text) {
+        if (!visitResult || !visitResult.text) {
           logger.debug("[Crawler] 텍스트 없음, 건너뜀.");
           continue;
         }
@@ -214,9 +239,10 @@ async processQueue(): Promise<void> {
 
       } catch (error) {
         if (error instanceof Error) {
+          logger.error(`[Crawler][process] 큐 처리 중 오류 발생: ${error.message}`);
           await this.browserManager.closeBrowser();
           await this.browserManager.initBrowser(10, 3000);
-          logger.error(`[Crawler][process] 큐 처리 중 오류 발생: ${error.message}`);
+          // throw new Error("[Crawler][process] 큐 처리 중 오류 발생");
         }
       }
     }

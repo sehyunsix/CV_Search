@@ -9,7 +9,35 @@ import puppeteer from 'puppeteer';
 /**
  * Chrome 브라우저 관리 구현체
  * Puppeteer를 사용하여 Chrome 브라우저를 관리합니다.
+ *
+ *
+ *
  */
+
+
+// ✅ 커스텀 에러 클래스
+class NewPageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NewPageError';
+  }
+}
+
+
+export function timeoutAfter<T>(promise: Promise<T>, ms: number, error: Error): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(error), ms);
+    promise
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
 export class ChromeBrowserManager implements IBrowserManager {
   browser?: Browser;
   browserPid?: number;
@@ -40,6 +68,7 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
       this.browser = await puppeteer.launch({
         headless: CONFIG.BROWSER.HEADLESS,
         args: CONFIG.BROWSER.LAUNCH_ARGS,
+        protocolTimeout : 100000_000,
         timeout: 30_000,
       });
 
@@ -49,6 +78,20 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
         logger.info(`[BrowserManager][initBrowser] Puppeteer browser launched with PID: ${pid}`);
         this.browserPid= pid; // 원하면 클래스 멤버로 저장 가능
       }
+
+      this.browser.on('disconnected', () => {
+        logger.debug('[BrowserManager] 브라우저가 종료되었습니다.');
+        this.initBrowser(retries, delay);
+      })
+
+      this.browser.on('targetcreated', (target) => {
+        logger.debug(`[BrowserManager] 타겟이 생성되었습니다. ${this.browser?.targets().length}개 남음`);
+        this.browser?.targets().forEach((target) => {
+              logger.debug(`[BrowserManager] 페이지가 생성되었습니다. ${target.url()}`);
+          });
+        logger.debug(`[BrowserManager] 컨택스트가  생성되었습니다. ${this.browser?.browserContexts().length}개 남음`);
+        this.browser?.pages().then((pages) => { logger.debug(`[BrowserManager] 페이지가  생성되었습니다. ${pages.length }개 남음`) });
+        });
 
       this.isLaunching = false;
       logger.debug('[BrowserManager][initBrowser] 브라우저 초기화 완료');
@@ -63,6 +106,8 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
     }
   }
 }
+
+
   /**
    * 새로운 페이지 생성 후 반환
    */
@@ -70,7 +115,7 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
     if (!this.browser) {
       throw new Error("No broswer inialized");
     }
-    return await this.browser.newPage();
+    return await timeoutAfter(this.browser.newPage(), 5000, new NewPageError('페이지 생성 시간 초과'))
   }
   /**
    * 브라우저 종료
@@ -79,6 +124,8 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
     if (this.browser) {
       logger.debug('[BrowserManager] 브라우저 정리 중...');
       try {
+
+
         await this.browser.close().catch((err) => {
           logger.error('[BrowserManager] 브라우저 종료 중 오류:', err);
         });

@@ -38,7 +38,7 @@ export interface ICrawler {
    * @param domain 도메인 정보
    * @returns 방문 결과
    */
-  visitUrl(url: string, domain: string): Promise<SubUrl>;
+  visitUrl(url: string, domain: string): Promise<SubUrl | void>;
 
   /**
    * URL 큐 처리

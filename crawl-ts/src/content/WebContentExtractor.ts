@@ -219,13 +219,18 @@ export class WebContentExtractor implements IContentExtractor {
     const popUpPageHandler = async (target: Target) => {
       try {
         logger.debug(`[extract onclick link][popUpPageHandler] 팝업 페이지 이벤트 실행`);
-        const newPage = await target.page().catch(() => null);
-        if (!newPage || newPage.isClosed()) return;
-        if (newPage) {
-          logger.debug(`[extract onclick link] 팝업 페이지 이벤트 실행 ${newPage.url()}`);
-          redirectedUrls.push(newPage.url());
-          newPage.close().catch(() => { });
+        const targetPage = await target.page();
+        if (targetPage) {
+          const targetUrl = targetPage.url();
+          if (targetUrl.includes('about:blank')) {
+            await targetPage.close();
+            return;
+          }
+          logger.debug(`[extract onclick link][popUpPageHandler] 팝업 페이지 URL: ${targetUrl}`);
+          redirectedUrls.push(targetUrl);
+          await targetPage.close();
         }
+
       } catch (err) {
         logger.error('[extract onclick link][popUpPageHandler] 팝업 페이지 이벤트 실행 중 오류 발생', err);
       }

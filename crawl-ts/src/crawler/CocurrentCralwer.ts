@@ -16,12 +16,13 @@ export class ConcurrentWebCrawler {
 
     await this.crawler.initialize();
 
+
     const workers = [];
     for (let i = 0; i < this.concurrency; i++) {
       workers.push(this.crawler.processQueue());
     }
+    await Promise.all(workers)
 
-    await Promise.all(workers);
 
     logger.debug('ConcurrentWebCrawler 실행 완료');
   }

@@ -31,8 +31,12 @@ dotenv.config();
         await parser.parseRawContentRetry(rawContent, 100, 2000)
           .then(
             (parseContent) => {
-              if (!parseContent) { throw new ParseError("parsesContent가 존재하지 않습니다.") }
-              if (!parseContent.job_description) { throw new ParseError("job_description이 존재하지 않습니다.") }
+              if (!parseContent) {
+                throw new ParseError(" ParseContent가 존재하지 않습니다.");
+              }
+              if (parser.verifyRecruitInfo(parseContent) === false) {
+                throw new ParseError("ParseContent가 RecruitInfo가 아닙니다.");
+              }
               return urlManager.getFavicon(rawContent.url).then((favicon) => ({ favicon, parseContent }))
             }
           )

@@ -413,6 +413,31 @@ export class GeminiParser implements IParser {
     }
   }
 
+
+  
+
+  verifyRecruitInfo( response :GeminiResponseRecruitInfoDTO): boolean {
+
+    if (response.is_recruit_info === false) {
+      logger.debug("[GeminiParser][verifyRecruitInfo] 채용공고가 아닙니다.");
+      return false;
+    }
+    if (!response.title) {
+      logger.debug("[GeminiParser][verifyRecruitInfo] 제목이 없습니다.");
+      return false;
+    }
+    if (!response.company_name) {
+      logger.debug("[GeminiParser][verifyRecruitInfo]회사명이 없습니다.");
+      return false;
+    }
+    if (!response.job_description) {
+      logger.debug("[GeminiParser][verifyRecruitInfo] 직무 설명이 없습니다.");
+      return false;
+    }
+
+    logger.debug("[GeminiParser][verifyRecruitInfo] 채용공고 입니다.");
+    return true;
+  }
   /**
    * DB 저장용 모델로 변환
    * @param botRecruitInfo 봇 파싱 결과
