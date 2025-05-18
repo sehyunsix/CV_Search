@@ -61,7 +61,7 @@ async function checkUrl(url: string): Promise<{ status: number | string; success
 }
 
 async function getNotVaildUrls() : Promise<{ id: number; url: string }[]> {
-  const RecruitInfoUrls = await mysqlRecruitInfoRepository.getAllRecruitInfoUrl();
+  const RecruitInfoUrls = await mysqlRecruitInfoRepository.getAllVaildRecruitInfoUrl();
   const tasks: Promise<boolean>[] = [];
   const results: {
     id: number;

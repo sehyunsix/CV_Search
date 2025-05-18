@@ -1,4 +1,4 @@
-import {  CreateDBRecruitInfoDTO ,RegionResult ,RecruitInfoUrlDto} from '../models/RecruitInfoModel';
+import {  CreateDBRecruitInfoDTO ,RecruitInfoUrlDto ,RecruitInfoVaildDto} from '../models/RecruitInfoModel';
 import { MysqlRecruitInfoSequelize  ,MysqlJobRegionSequelize} from '../models/MysqlRecruitInfoModel';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
@@ -105,11 +105,11 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
    * @param recruitInfo 업데이트할 채용 정보 객체
    * @returns 업데이트된 채용 정보 객체 또는 null (업데이트 실패 시)
    */
-   async getAllVaildRecruitInfoUrl(): Promise<RecruitInfoUrlDto[] | []> {
+   async getAllVaildRecruitInfoUrl(): Promise<RecruitInfoVaildDto[] | []> {
 
     try {
       const now = new Date();
-      const result: RecruitInfoUrlDto[] = await MysqlRecruitInfoSequelize.findAll({ where: { 'is_public': true } ,attributes: ['id','url'] });
+      const result: RecruitInfoVaildDto[] = await MysqlRecruitInfoSequelize.findAll({ where: { 'is_public': true } ,attributes: ['id','url','is_public'] });
       return result
     } catch (error) {
       logger.error('채용 정보 업데이트 중 오류:', error);
