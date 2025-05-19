@@ -1,22 +1,20 @@
-import { ICrawler } from './ICrawler';
-import { IBrowserManager } from '../browser/IBrowserManager';
 import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import puppeteer, { Dialog ,Page, TimeoutError} from 'puppeteer';
+import puppeteer, { BrowserContext, Dialog ,Page, TimeoutError} from 'puppeteer';
 import { IUrlManager } from '../url/IUrlManager';
 import { URLSTAUS } from '../url/RedisUrlManager';
 import { Producer } from '../message/Producer';
 import { IRawContent, RawContentSchema } from '../models/RawContentModel';
-import { timeoutAfter } from '../browser/ChromeBrowserManager';
+import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserManager';
 
   /**
    * 웹 크롤러 구현체
    * 브라우저, 콘텐츠 추출, URL 관리, DB 연결 컴포넌트를 조합한 크롤러
    */
-  export class WebCrawler implements ICrawler {
-    browserManager: IBrowserManager;
+  export class WebCrawler  {
+    browserManager: ChromeBrowserManager;
     contentExtractor: IContentExtractor;
     urlManager: IUrlManager;
     rawContentProducer: Producer;
@@ -26,7 +24,7 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
      * @param options 크롤러 옵션
      */
     constructor(options: {
-      browserManager: IBrowserManager;
+      browserManager: ChromeBrowserManager;
       contentExtractor: IContentExtractor;
       rawContentProducer: Producer;
       urlManager: IUrlManager;
@@ -57,7 +55,7 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
    * @param urlInfo 방문할 URL 정보
    * @returns 방문 결과
    */
-  async visitUrl(url: string, domain: string ): Promise<SubUrl | void> {
+  async visitUrl(url: string, domain: string ,context: BrowserContext ): Promise<SubUrl | void> {
 
 
     logger.debug(`[Crawler][visitUrl] URL 방문 시작: ${url}`);
@@ -69,7 +67,7 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
     });
     let page : Page;
     //페이지 생성
-    return this.browserManager.getNewPage()
+    return context.newPage()
       .then((newPage) => {
       logger.debug(`[Crawler][visitUrl] URL 페이지 생성: ${url}`);
         page = newPage;
@@ -194,7 +192,7 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
 
 
 
-async processQueue(): Promise<void> {
+async processQueue(processNumber : number, concurrency: number): Promise<void> {
     while (true) {
       try {
         const nextUrlInfo = await this.urlManager.getNextUrl();
@@ -203,12 +201,12 @@ async processQueue(): Promise<void> {
           continue;
         }
 
-        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain)
+        const context = await this.browserManager.getBrowserContext(processNumber);
+        const visitResult = await this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain ,context)
           .catch((error) => {
             logger.error(`[Crawler][process] URL 방문 중 오류 발생: ${error.message}`);
             this.urlManager.setURLStatus(nextUrlInfo.url, URLSTAUS.NOT_VISITED);
             throw new Error("[Crawler][process] 큐 처리 중 오류 발생");
-
           });
 
         if (!visitResult || !visitResult.text) {
@@ -235,7 +233,7 @@ async processQueue(): Promise<void> {
         if (error instanceof Error) {
           logger.error(`[Crawler][process] 큐 처리 중 오류 발생: ${error.message}`);
           await this.browserManager.closeBrowser();
-          await this.browserManager.initBrowser(10, 3000);
+          await this.browserManager.initBrowser(concurrency, 10, 3000);
           // throw new Error("[Crawler][process] 큐 처리 중 오류 발생");
         }
       }
@@ -243,17 +241,5 @@ async processQueue(): Promise<void> {
 }
 
 
-  /**
-   * 크롤러 실행
-   */
-  async run(): Promise<void> {
-    logger.debug(`WebCrawler 실행`);
-    try {
-      await this.initialize();
-      await this.processQueue();
-    } finally {
-      await this.browserManager.closeBrowser();
-    }
-    logger.debug('WebCrawler 실행 완료');
-  }
+
 }

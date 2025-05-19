@@ -5,7 +5,6 @@ import { defaultLogger as logger } from '../utils/logger';
 import { IRawContent } from '../models/RawContentModel';
 import { QueueNames } from '../message/enums';
 import { RedisUrlManager } from '../url/RedisUrlManager';
-import Redis from 'ioredis/built';
 import { RecruitInfoRepository } from '../database/RecruitInfoRepository';
 
 
