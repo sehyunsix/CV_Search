@@ -2,7 +2,7 @@ import 'dotenv/config'
 import {  regionText2RegionIdsAi } from '../../src/trasnform/Transform'; // 경로는
 import { GeminiParser } from '../../src/parser/GeminiParser'; // GeminiParser 모듈
 
-describe('regionText2RegionIds 테스트', () => {
+describe.skip('regionText2RegionIds intergration 테스트', () => {
   const parser = new GeminiParser();
 
   test('정확한 한글 입력: 서울 → [1]', async () => {

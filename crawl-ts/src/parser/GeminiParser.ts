@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import {
   GoogleGenerativeAI,
   Schema,
@@ -414,7 +415,7 @@ export class GeminiParser implements IParser {
   }
 
 
-  
+
 
   verifyRecruitInfo( response :GeminiResponseRecruitInfoDTO): boolean {
 

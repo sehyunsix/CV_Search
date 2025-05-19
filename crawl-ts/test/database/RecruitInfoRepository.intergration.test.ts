@@ -34,7 +34,7 @@ describe('Recruit Info Repository 확인', () => {
     } catch (error) {
       console.error('Error deleting record:', error);
     }
-  } 
+  }
   );
 
   });
