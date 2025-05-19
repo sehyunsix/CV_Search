@@ -1,7 +1,6 @@
 // repositories/MongoRecruitInfoRepository.ts
 import { Logger, defaultLogger as logger } from '../utils/logger';
 import config from '../config/config';
-import { ICacheDbRecruitInfo } from '@models/RecruitInfoModel';
 import { MongoRecruitInfoModel, } from '@models/MongoRecruitInfoModel';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 import mongoose from 'mongoose';

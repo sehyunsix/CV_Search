@@ -88,20 +88,39 @@ export const enum URLSTAUS
       const domian = this.extractDomain(url);
       try {
         const oldStatus : UrlStatus = await this.redisClient.hGet(`status:${domian}`, url) as UrlStatus;
+        const multi = this.redisClient.multi();
         if (oldStatus) {
-          await this.redisClient.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
-          await this.redisClient.sRem(`${oldStatus}`, url);
+          multi.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
+          multi.sRem(`${oldStatus}`, url);
         }
-        await this.redisClient.hSet(`status:${domian}`, url, newStatus);
-        await this.redisClient.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
-        await this.redisClient.sAdd(newStatus, url);
 
+        multi.hSet(`status:${domian}`, url, newStatus);
+        multi.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
+        multi.sAdd(newStatus, url);
+
+        await multi.exec();
       } catch (error) {
         logger.error(`[RedisUrlManager][setUrlStatus] URL 상태 설정 중 오류 (${url}):`, error);
         throw error;
       }
     }
 
+    async setURLStatusByOldStatus(url: string, oldStatus : UrlStatus ,newStatus: UrlStatus): Promise<void> {
+      const domian = this.extractDomain(url);
+      try {
+        const multi = this.redisClient.multi();
+        multi.sRem(`urls:${this.extractDomain(url)}:${oldStatus}`, url);
+        multi.sRem(`${oldStatus}`, url);
+        multi.hSet(`status:${domian}`, url, newStatus);
+        multi.sAdd(`urls:${this.extractDomain(url)}:${newStatus}`, url);
+        multi.sAdd(newStatus, url);
+        await multi.exec();
+
+      } catch (error) {
+        logger.error(`[RedisUrlManager][setUrlStatus] URL 상태 설정 중 오류 (${url}):`, error);
+        throw error;
+      }
+    }
     /**
      * URL 상태 가져오기
      * @param url URL
@@ -161,11 +180,14 @@ export const enum URLSTAUS
      * @param limit 최대 개수
      * @returns URL 배열
      */
-    async getURLsByStatus(status: UrlStatus, limit: number = 10): Promise<string[]> {
+    async getURLsByStatus(status: UrlStatus):  Promise<string[]> {
       try {
         return await this.redisClient.sMembers(status);
+
       } catch (error) {
-        logger.error(`상태별 URL 가져오기 중 오류 (${status}):`, error);
+        if (error instanceof Error) {
+          logger.error(`상태별 URL 가져오기 중 오류 (${status}):`, error.message);
+        }
         return [];
       }
     }
@@ -181,6 +203,7 @@ export const enum URLSTAUS
       try {
         return await this.redisClient.sMembers(`urls:${domain}:${status}`);
       } catch (error) {
+
         logger.error(`도메인별 URL 가져오기 중 오류 (${domain}, ${status}):`, error);
         return [];
       }

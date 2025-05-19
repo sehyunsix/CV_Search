@@ -139,3 +139,11 @@ export interface RecruitInfoUrlDto {
   id: number;
   url: string;
 }
+
+export interface RecruitInfoVaildDto {
+  id: number;
+
+  url: string;
+
+  is_public: boolean;
+}

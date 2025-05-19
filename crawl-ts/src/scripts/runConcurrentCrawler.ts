@@ -30,7 +30,7 @@ async function runConcurrentCrawler() {
     });
 
     // 3. 동시성 수준 설정 (환경 변수에서 가져오거나 기본값 사용)
-    const concurrencyLevel = parseInt(process.env.CONCURRENCY_LEVEL || '4');
+    const concurrencyLevel = parseInt(process.env.CONCURRENCY_LEVEL || '8');
 
     // 4. ConcurrentWebCrawler 인스턴스 생성
     const concurrentCrawler = new ConcurrentWebCrawler(webCrawler, concurrencyLevel);

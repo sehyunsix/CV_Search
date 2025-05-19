@@ -5,7 +5,6 @@ import { defaultLogger as logger } from '../utils/logger';
 import { IRawContent } from '../models/RawContentModel';
 import { QueueNames } from '../message/enums';
 import { RedisUrlManager } from '../url/RedisUrlManager';
-import Redis from 'ioredis/built';
 import { RecruitInfoRepository } from '../database/RecruitInfoRepository';
 
 
@@ -31,8 +30,12 @@ dotenv.config();
         await parser.parseRawContentRetry(rawContent, 100, 2000)
           .then(
             (parseContent) => {
-              if (!parseContent) { throw new ParseError("parsesContent가 존재하지 않습니다.") }
-              if (!parseContent.job_description) { throw new ParseError("job_description이 존재하지 않습니다.") }
+              if (!parseContent) {
+                throw new ParseError(" ParseContent가 존재하지 않습니다.");
+              }
+              if (parser.verifyRecruitInfo(parseContent) === false) {
+                throw new ParseError("ParseContent가 RecruitInfo가 아닙니다.");
+              }
               return urlManager.getFavicon(rawContent.url).then((favicon) => ({ favicon, parseContent }))
             }
           )
@@ -44,7 +47,10 @@ dotenv.config();
               if (!recruitInfo) { throw new ParseError("RecruitInfo가 존재하지 않습니다.") }
               return recruitInfoRepository.createRecruitInfo(recruitInfo)
             }
-          )
+        )
+          .then(() => {
+            logger.info('[consumer] 채용 공고 저장 성공');
+          })
           .catch(
             (error) => {
               if (error instanceof ParseError) {

@@ -1,10 +1,8 @@
-import { Sequelize ,QueryTypes ,Model} from 'sequelize'
-import {  CreateDBRecruitInfoDTO ,RegionResult ,RecruitInfoUrlDto} from '../models/RecruitInfoModel';
+import {  CreateDBRecruitInfoDTO ,RecruitInfoUrlDto ,RecruitInfoVaildDto} from '../models/RecruitInfoModel';
 import { MysqlRecruitInfoSequelize  ,MysqlJobRegionSequelize} from '../models/MysqlRecruitInfoModel';
 import { defaultLogger as logger } from '../utils/logger';
 import { IRecruitInfoRepository } from './IRecruitInfoRepository';
 import axios from 'axios';
-import { runCLI } from 'jest/build';
 /**
  * MySQL 데이터베이스 서비스 클래스
  * 채용 정보를 MySQL 데이터베이스에 저장하고 관리하는 서비스
@@ -102,15 +100,39 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
   }
 
 
+   /**
+   * 채용 정보 업데이트
+   * @param recruitInfo 업데이트할 채용 정보 객체
+   * @returns 업데이트된 채용 정보 객체 또는 null (업데이트 실패 시)
+   */
+   async getAllVaildRecruitInfoUrl(): Promise<RecruitInfoVaildDto[] | []> {
+
+    try {
+      const now = new Date();
+      const result: RecruitInfoVaildDto[] = await MysqlRecruitInfoSequelize.findAll({ where: { 'is_public': true } ,attributes: ['id','url','is_public'] });
+      return result
+    } catch (error) {
+      logger.error('채용 정보 업데이트 중 오류:', error);
+      throw error;
+    }
+  }
+
+
 /**
  * 채용 정보 업데이트
  * @param recruitInfo 업데이트할 채용 정보 객체
  * @returns 업데이트된 채용 정보 객체 또는 null (업데이트 실패 시)
  */
-  async deleteRecruitInfoById(id: number): Promise<void> {
-   try {
-    const response = await axios.delete(`${process.env.SPRING_API_DOMAIN}/jobs/delete-one-job?jobId=${id}`, {
-    });
+async deleteRecruitInfoById(id: number): Promise<void> {
+  try {
+    const response = await axios.delete(
+      `${process.env.SPRING_API_DOMAIN}/jobs/delete-one-job?jobId=${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.SPRING_ACCESS_TOKEN}`, // ✅ 토큰 추가
+        },
+      }
+    );
 
     if (response.status === 200) {
       console.log(`✅ Job ${id} 삭제 성공`);
@@ -118,8 +140,8 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
       console.warn(`⚠️ Job ${id} 삭제 응답 코드: ${response.status}`);
     }
   } catch (error) {
-     console.error(`❌ Job ${id} 삭제 실패`, error);
-     throw error;
-   }
+    console.error(`❌ Job ${id} 삭제 실패`, error);
+    throw error;
   }
+}
 }
