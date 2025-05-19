@@ -56,6 +56,11 @@ export class MysqlJobRegionSequelize extends Model {
   public region_id!: number;
 }
 
+export class MysqlFaviconSequelize extends Model {
+  public id!: number;
+  public domain!: string;
+  public favicon!: string;
+}
 
 
 MysqlRecruitInfoSequelize.init(
@@ -196,6 +201,22 @@ MysqlJobRegionSequelize.init({
     }
   ]
 })
+
+MysqlFaviconSequelize.init({
+  domain: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    primaryKey: true,
+  },
+  logo: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  }
+}, {
+  sequelize: mysqlRecruitInfoSequelize,
+  tableName: process.env.MYSQL_FAVICON_TABLE,
+  timestamps: false,
+});
 
 
 

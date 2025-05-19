@@ -141,6 +141,23 @@ export const enum URLSTAUS
       }
     }
 
+    async getAllFavicon(): Promise<{ domain: string, logo: string }[]> {
+
+      const keys = await this.redisClient.keys('favicon*');
+      const faviconList: { domain: string, logo: string }[] = [];
+      for (const key of keys) {
+        const domain = key.split(':')[1];
+        const logo = await this.redisClient.get(key);
+        if (logo) {
+          faviconList.push({ domain, logo });
+        }
+      }
+      return faviconList;
+     }
+
+
+
+
 
       /**
      * favicon 가져오기
@@ -190,6 +207,8 @@ export const enum URLSTAUS
         return [];
       }
     }
+
+
 
     /**
      * 특정 도메인의 특정 상태 URL 가져오기
