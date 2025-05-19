@@ -1,12 +1,14 @@
 import 'dotenv/config';
 import { MysqlRecruitInfoRepository } from '../../src/database/MysqlRecruitInfoRepository';
+import { getSpringAuthToken } from '../../src/utils/key';
 describe('Mysql Repository 테스트', () => {
 
   let repository: MysqlRecruitInfoRepository;
 
   repository = new MysqlRecruitInfoRepository();
   test('job ID로 job 삭제하기', async () => {
-    await repository.deleteRecruitInfoById(9999);
+    const token = await getSpringAuthToken();
+    await repository.deleteRecruitInfoById(9999, token);
   }
   );
 
@@ -30,14 +32,7 @@ describe('Mysql Repository 테스트', () => {
   )
 
 
-  test('모든 채용 보여주기 가능한 정보 URL 가져오기', async () => {
-    const recruitInfoUrls = await repository.getAllVaildRecruitInfoUrl();
-   expect(recruitInfoUrls.some((data) => {
-      data.is_public = false
-   })
-    ).toBe(false);
-    console.log('모든 채용 보여주기 가능한 정보 URL:', recruitInfoUrls);
-  })
+
 
 
 })

@@ -3,7 +3,12 @@ import { defaultLogger as logger } from '../../src/utils/logger';
 import axios from 'axios';
 import { writeFileSync } from 'fs';
 import { MysqlRecruitInfoRepository } from '../database/MysqlRecruitInfoRepository';
+import { getSpringAuthToken } from '../utils/key';
+const puppeteer = require('puppeteer');
 import { rejects } from 'assert';
+import { Dialog } from 'puppeteer';
+import * as fs from 'fs';
+
 
 const mysqlRecruitInfoRepository = new MysqlRecruitInfoRepository();
 const keywordsToDetectFailure = [
@@ -16,12 +21,28 @@ const keywordsToDetectFailure = [
   '채용이 종료',
 ];
 
-async function checkUrl(url: string): Promise<{ status: number | string; success: boolean; reason?: string }> {
+
+
+export async function checkUrl(url: string): Promise<{ url:string, status: number | string; success: boolean; reason?: string }> {
 
   try {
     const response = await axios.get(url);
-    const html = response.data;
+    // console.log(response.data);
+    const html  = response.data;
+    const contentType = response.headers['content-type'];
 
+    if (html.includes('<body')) {
+      // console.log("HTML 응답입니다.");
+
+    } else {
+      // console.log("HTML이 아닙니다.");
+      return {
+        url,
+        status: response.status,
+        success: false,
+        reason: 'NOT_HTML',
+      };
+    }
     const isEmpty = !html || html.trim().length === 0;
     const containsFailureKeyword = keywordsToDetectFailure.some(keyword =>
       html.includes(keyword)
@@ -30,6 +51,7 @@ async function checkUrl(url: string): Promise<{ status: number | string; success
     if (isEmpty || containsFailureKeyword) {
       console.log(`[FAIL - ${isEmpty ? 'EMPTY' : 'KEYWORD'}] ${url}`);
       return {
+        url,
         status: response.status,
         success: false,
         reason: isEmpty
@@ -38,6 +60,7 @@ async function checkUrl(url: string): Promise<{ status: number | string; success
       };
     } else {
       return {
+        url,
         status: response.status,
         success: true,
       };
@@ -47,12 +70,14 @@ async function checkUrl(url: string): Promise<{ status: number | string; success
     if (axios.isAxiosError(error)) {
       console.error(`[ERROR] ${url}: ${error.message}`);
       return {
+        url,
         status: error.response?.status || 'UNKNOWN_ERROR',
         success: false,
         reason: 'REQUEST_ERROR',
       };
     }
     return {
+      url,
         status: 'UNKNOWN_ERROR',
         success: false,
         reason: 'REQUEST_ERROR',
@@ -102,29 +127,50 @@ async function getNotVaildUrls() : Promise<{ id: number; url: string }[]> {
 }
 
 
-
-(async () => {
-  await getNotVaildUrls()
-    .then(async (datas) => {
-      const deleteCount = datas.length;
-      logger.debug(`삭제할 URL 갯수: ${deleteCount}`);
-      const tasks: Promise<boolean>[] = [];
-      for (const data of datas) {
-        tasks.push(
-          mysqlRecruitInfoRepository.deleteRecruitInfoById(data.id)
-            .then(() => {
-              logger.debug(`삭제 성공: ${data.id} - ${data.url}`);
-              return true;
-            })
-            .catch((error) => {
-              logger.debug(`삭제 실패: ${data.id} - ${data.url}`, error);
-              return false;
-            })
-        );
+if (require.main === module) {
+  (async () => {
+    const token = await getSpringAuthToken()
+    await getNotVaildUrls()
+      .then(async (datas) => {
+        const deleteCount = datas.length;
+        logger.debug(`삭제할 URL 갯수: ${deleteCount}`);
+        const tasks: Promise<boolean>[] = [];
+        for (const data of datas) {
+          tasks.push(
+            mysqlRecruitInfoRepository.deleteRecruitInfoById(data.id,token)
+              .then(() => {
+                logger.debug(`삭제 성공: ${data.id} - ${data.url}`);
+                return true;
+              })
+              .catch((error) => {
+                logger.debug(`삭제 실패: ${data.id} - ${data.url}`, error);
+                return false;
+              })
+          );
+        }
+        const successCount = (await Promise.all(tasks)).filter(r => r == true).length;
+        logger.debug(`삭제한 URL 갯수: ${successCount} / ${datas.length}`);
       }
-      const successCount = (await Promise.all(tasks)).filter(r=> r == true).length;
-      logger.debug(`삭제한 URL 갯수: ${successCount} / ${datas.length}`);
-    }
-  )
+      )
+    //  const RecruitInfoUrls = await mysqlRecruitInfoRepository.getAllVaildRecruitInfoUrl();
+    // const results = await  Promise.all(RecruitInfoUrls.map((data) => {
+    //   return checkUrl(data.url)
+    //     .then((result) => {
+    //       console.log('result :', result)
+    //       return result
+    //     })
+    // }))
 
-})();
+
+    // const invalidUrls = results.filter((result) => result.success === false)
+    // const validUrls = results.filter((result) => result.success === true)
+
+    // console.log('vaildUrls :',validUrls.length)
+    // console.log('invalidUrls :', invalidUrls.length)
+    // const json = JSON.stringify(invalidUrls, null, 2);  // 보기 좋게 정렬 (indent: 2)
+    // fs.writeFileSync('invalidUrls.json', json, 'utf-8');
+    // console.log('invalidUrls.json 파일로 저장 완료')
+
+
+  })();
+}

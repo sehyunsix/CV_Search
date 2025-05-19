@@ -3,6 +3,18 @@ import { RedisUrlManager} from '../../src/url/RedisUrlManager';
 import { createClient } from 'redis';
 
 jest.mock('redis', () => {
+
+  const multi = {
+    hGet: jest.fn(),
+    hSet: jest.fn(),
+    sAdd: jest.fn(),
+    sRem: jest.fn(),
+    sMembers: jest.fn(),
+    sPop: jest.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
+    exists: jest.fn(),
+  }
   const mClient = {
     connect: jest.fn(),
     ping: jest.fn(),
@@ -10,6 +22,7 @@ jest.mock('redis', () => {
     hSet: jest.fn(),
     sAdd: jest.fn(),
     sRem: jest.fn(),
+    multi: jest.fn().mockResolvedValue(multi),
     sMembers: jest.fn(),
     sPop: jest.fn(),
     get: jest.fn(),
@@ -47,9 +60,9 @@ describe('RedisUrlManager', () => {
     mockClient.hGet.mockResolvedValue('notvisited');
 
     await manager.setURLStatus(url, 'visited');
-    expect(mockClient.hSet).toHaveBeenCalledWith('status:example.com', url, 'visited');
-    expect(mockClient.sAdd).toHaveBeenCalledWith('urls:example.com:visited', url);
-    expect(mockClient.sAdd).toHaveBeenCalledWith('visited', url);
+    expect(mockClient.multi().hSet).toHaveBeenCalledWith('status:example.com', url, 'visited');
+    expect(mockClient.multi().sAdd).toHaveBeenCalledWith('urls:example.com:visited', url);
+    expect(mockClient.multi().sAdd).toHaveBeenCalledWith('visited', url);
   });
 
   it('should add URL correctly if not already stored', async () => {
