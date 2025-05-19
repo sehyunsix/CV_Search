@@ -91,7 +91,7 @@ export class WebContentExtractor implements IContentExtractor {
       });
 
       const runtime = Date.now() - startTime;
-      logger.eventInfo('extract_page_content', { runtime });
+      logger.debug('extract_page_content', { runtime });
 
       return result;
     } catch (error) {
@@ -211,8 +211,6 @@ export class WebContentExtractor implements IContentExtractor {
   async extractOnclickLinks(page: Page , allowedDomains : string[]): Promise<string[]> {
     // 1. 스크롤하면서 모든 a[onclick] 태그 수집
       const onclickScripts = await this.collectOnclickScriptsWithScroll(page);
-      console.debug(onclickScripts);
-
      // 2. 각 onclick 스크립트를 병렬로 실행해 redirect된 URL 수집
     const redirectedUrls: string[] = []
 

@@ -96,13 +96,13 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
         logger.debug(`[Crawler][visitUrl] URL 페이지 추출 ${url}`);
         subUrlResult.finalUrl = page.url();
         subUrlResult.finalDomain = subUrlResult.finalUrl ? extractDomain(subUrlResult.finalUrl) : domain;
-        return this.contentExtractor.extractPageContent(page).then((results) => ({ page, results }));
+        return timeoutAfter(this.contentExtractor.extractPageContent(page).then((results) => ({ page, results })),60_000, new TimeoutError('extracPage 수집 시간 초과'));
       })
       //페이지  링크 추출
       .then((context) => {
         subUrlResult.title = context.results.title;
         subUrlResult.text = context.results.text;
-        return this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({ ...context, results }));
+        return timeoutAfter(this.contentExtractor.extractLinks(context.page, [domain]).then((results) => ({ ...context, results })),60_000, new TimeoutError('extracklinks 수집 시간 초과'));
       })
       .then((context) => {
       //페이지  클릭 링크  추출
@@ -123,15 +123,11 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
           allowed_after_robots: subUrlResult.crawledUrls.length
         };
         subUrlResult.success = true;
+        logger.eventInfo(`[Crawler][visitUrl] URL 방문 완료: ${url} (${subUrlResult.crawlStats.total}개 링크)`);
         return subUrlResult
       }).catch((error) => {
-        // if (error instanceof TimeoutError) {
-        //   logger.error(`[Crawler][visitUrl] URL 방문 시간 초과 ${url}: ${error.message}`);
-        //   return;
-        // }
         logger.error(`[Crawler][visitUrl] URL 방문 중 오류 발생 ${url}: ${error.message}`);
         throw error;
-
       })
       .finally(() => {
         if (!page) {
@@ -149,8 +145,6 @@ import { timeoutAfter } from '../browser/ChromeBrowserManager';
         }
       }
       )
-
-
   }
 
   /**

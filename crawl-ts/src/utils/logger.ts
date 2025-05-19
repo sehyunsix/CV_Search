@@ -74,7 +74,7 @@ export class Logger {
       case 'error':
         return chalk.red(message);
       case 'event':
-        return chalk.magenta(message);
+        return chalk.green(message);
       default:
         return message;
     }
@@ -129,4 +129,4 @@ export class Logger {
 }
 
 // 기본 인스턴스
-export const defaultLogger = new Logger();
+export const defaultLogger = new Logger({ logDir: './logs', logLevel:'event'});

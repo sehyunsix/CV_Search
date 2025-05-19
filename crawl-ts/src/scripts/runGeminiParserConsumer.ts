@@ -48,7 +48,10 @@ dotenv.config();
               if (!recruitInfo) { throw new ParseError("RecruitInfo가 존재하지 않습니다.") }
               return recruitInfoRepository.createRecruitInfo(recruitInfo)
             }
-          )
+        )
+          .then(() => {
+            logger.info('[consumer] 채용 공고 저장 성공');
+          })
           .catch(
             (error) => {
               if (error instanceof ParseError) {

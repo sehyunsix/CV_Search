@@ -35,7 +35,7 @@ export function extractDomain(url: string): string {
     const parsedUrl = new URL(urlWithProtocol);
     return parsedUrl.hostname;
   } catch (error) {
-    console.error(`URL 파싱 오류: ${url}`, error);
+    logger.error(`[extractDomain] URL 파싱 오류: ${url}`, error);
     return '';
   }
 }
