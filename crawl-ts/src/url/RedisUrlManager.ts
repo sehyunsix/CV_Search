@@ -154,8 +154,7 @@ export const enum URLSTAUS
           const favicon = await this.redisClient.get(redisKey);
           return favicon;
         } catch (error) {
-          logger.error(`[RedisUrlManager][getFavicon] URL 상태 가져오기 중 오류 (${domain}):`, error);
-          return null;
+          throw new Error(`[getFavicon] 파비콘 가져오기 중 오류 (${domain}): ${error}`);
         }
       }
 
