@@ -240,7 +240,7 @@ export class WebContentExtractor implements IContentExtractor {
       try {
         tempPage = await page.browser().newPage();
 
-        page.browser().once('targetcreated', popUpPageHandler)
+        page.browserContext().once('targetcreated', popUpPageHandler)
 
         await tempPage.goto(page.url(), { waitUntil: 'load', timeout: 3000 });
         await Promise.all(
@@ -252,7 +252,7 @@ export class WebContentExtractor implements IContentExtractor {
             logger.debug(`[extract onclick link] 스크립트 실행 완료: ${tempPage.url}`);
           }
         })
-        page.browser().off('targetcreated', popUpPageHandler);
+        page.browserContext().off('targetcreated', popUpPageHandler);
         redirectedUrls.push(tempPage.url());
       } catch (err) {
         logger.error('[extract onclick link] 스크립트 url 수집 증 오류가 발생 했습니다.', err);

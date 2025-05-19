@@ -17,9 +17,10 @@ export class ConcurrentWebCrawler {
     await this.crawler.initialize();
 
 
+
     const workers = [];
     for (let i = 0; i < this.concurrency; i++) {
-      workers.push(this.crawler.processQueue());
+      workers.push(this.crawler.processQueue(i ,this.concurrency));
     }
     await Promise.all(workers)
 

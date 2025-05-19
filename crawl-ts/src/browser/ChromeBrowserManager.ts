@@ -1,8 +1,7 @@
-import { IBrowserManager } from './IBrowserManager';
 import { defaultLogger as logger } from '../utils/logger';
 import CONFIG from '../config/config';
 import { execSync } from 'child_process';
-import { Browser, Page } from 'puppeteer';
+import { Browser, Page,BrowserContext} from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 import puppeteer from 'puppeteer';
@@ -38,7 +37,7 @@ export function timeoutAfter<T>(promise: Promise<T>, ms: number, error: Error): 
       });
   });
 }
-export class ChromeBrowserManager implements IBrowserManager {
+export class ChromeBrowserManager{
   browser?: Browser;
   browserPid?: number;
 
@@ -48,7 +47,7 @@ export class ChromeBrowserManager implements IBrowserManager {
    */private isLaunching = false;
 
 
-async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
+async initBrowser(concurrency = 8,  retries = 3, delay = 2000): Promise<Browser |undefined> {
   for (let i = 0; i < retries; i++) {
 
     if (this.isLaunching) {
@@ -79,6 +78,10 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
         this.browserPid= pid; // 원하면 클래스 멤버로 저장 가능
       }
 
+      for (let i = 0; i < concurrency; i++) {
+        await this.browser?.createBrowserContext()
+      }
+
       this.browser.on('disconnected', () => {
         logger.debug('[BrowserManager] 브라우저가 종료되었습니다.');
         this.initBrowser(retries, delay);
@@ -107,6 +110,22 @@ async initBrowser(retries = 3, delay = 2000): Promise<Browser |undefined> {
   }
 }
 
+
+  async getBrowser(): Promise<Browser> {
+    if (!this.browser) {
+      throw new Error("No browser initialized");
+    }
+    return await this.browser;
+  }
+
+
+  async getBrowserContext(processNumber: number): Promise<BrowserContext> {
+    if (!this.browser) {
+      throw new Error("No browser initialized");
+    }
+    const contexts = await this.browser.browserContexts();
+    return contexts[processNumber]
+  }
 
   /**
    * 새로운 페이지 생성 후 반환
