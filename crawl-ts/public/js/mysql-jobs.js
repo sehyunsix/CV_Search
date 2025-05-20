@@ -2,12 +2,7 @@ let currentPage = 1;
 let totalPages = 1;
 let jobsPerPage = 10;
 let currentJobs = [];
-let filters = {
-    jobType: '',
-    experience: '',
-    searchText: '',
-    sortBy: 'created_at'
-};
+
 
 // Initialize when the DOM content is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,48 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Function to set up all event listeners
 function setupEventListeners() {
-    // Pagination controls
-    document.getElementById('prev-page').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            loadJobListings();
-        }
-    });
-
-    document.getElementById('next-page').addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            loadJobListings();
-        }
-    });
-
-    // Filter controls
-    document.getElementById('apply-filters').addEventListener('click', () => {
-        currentPage = 1;
-        filters.jobType = document.getElementById('job-type').value;
-        filters.experience = document.getElementById('experience').value;
-        filters.searchText = document.getElementById('search-text').value;
-        filters.sortBy = document.getElementById('sort-by').value;
-        loadJobListings();
-    });
-
-    document.getElementById('reset-filters').addEventListener('click', () => {
-        currentPage = 1;
-        document.getElementById('job-type').value = '';
-        document.getElementById('experience').value = '';
-        document.getElementById('search-text').value = '';
-        document.getElementById('sort-by').value = 'created_at';
-
-        filters = {
-            jobType: '',
-            experience: '',
-            searchText: '',
-            sortBy: 'created_at'
-        };
-
-        loadJobListings();
-    });
-
     // Modal close button
     document.querySelector('.close').addEventListener('click', () => {
         document.getElementById('job-modal').style.display = 'none';
@@ -85,23 +38,8 @@ async function loadJobListings() {
         jobsContainer.innerHTML = '<div class="loading">Loading job listings...</div>';
 
         // Construct the API URL with filters and pagination
-        let apiUrl = `/api/mysql-jobs?page=${currentPage}&limit=${jobsPerPage}`;
+        let apiUrl = `/api/job`;
 
-        if (filters.jobType) {
-            apiUrl += `&jobType=${encodeURIComponent(filters.jobType)}`;
-        }
-
-        if (filters.experience) {
-            apiUrl += `&experience=${encodeURIComponent(filters.experience)}`;
-        }
-
-        if (filters.searchText) {
-            apiUrl += `&search=${encodeURIComponent(filters.searchText)}`;
-        }
-
-        if (filters.sortBy) {
-            apiUrl += `&sortBy=${encodeURIComponent(filters.sortBy)}`;
-        }
 
         // Fetch the data from the server
         const response = await fetch(apiUrl);
@@ -112,14 +50,14 @@ async function loadJobListings() {
 
         const data = await response.json();
 
-        currentJobs = data.jobs;
-        totalPages = Math.ceil(data.total / jobsPerPage);
+        // currentJobs = data.jobs;
+        // totalPages = Math.ceil(data.total / jobsPerPage);
 
-        // Update the results count
-        document.getElementById('results-count').textContent = `Showing ${currentJobs.length} of ${data.total} job listings`;
+        // // Update the results count
+        document.getElementById('results-count').textContent = `Showing ${data.data.length} job listings`;
 
         // Display the jobs
-        displayJobs(currentJobs);
+        displayJobs(data.data);
 
         // Update pagination controls
         updatePagination();
@@ -135,53 +73,7 @@ async function loadJobListings() {
     }
 }
 
-// Function to load filter options dynamically from available data
-async function loadFilterOptions() {
-    try {
-        const response = await fetch('/api/mysql-jobs/filters');
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Populate job type filter
-        const jobTypeSelect = document.getElementById('job-type');
-        jobTypeSelect.innerHTML = '<option value="">All Types</option>';
-
-        if (data.jobTypes && data.jobTypes.length) {
-            data.jobTypes.forEach(type => {
-                if (type) {
-                    const option = document.createElement('option');
-                    option.value = type;
-                    option.textContent = type;
-                    jobTypeSelect.appendChild(option);
-                }
-            });
-        }
-
-        // Populate experience level filter
-        const experienceSelect = document.getElementById('experience');
-        experienceSelect.innerHTML = '<option value="">All Levels</option>';
-
-        if (data.experienceLevels && data.experienceLevels.length) {
-            data.experienceLevels.forEach(level => {
-                if (level) {
-                    const option = document.createElement('option');
-                    option.value = level;
-                    option.textContent = level;
-                    experienceSelect.appendChild(option);
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error('Error loading filter options:', error);
-    }
-}
-
-// Function to display the job listings
 function displayJobs(jobs) {
     const jobsContainer = document.getElementById('jobs-container');
     jobsContainer.innerHTML = '';
@@ -193,7 +85,7 @@ function displayJobs(jobs) {
 
     jobs.forEach(job => {
         // Format dates
-        const postedDate = job.posted_at ? new Date(job.posted_at).toLocaleDateString() : 'Unknown';
+        const postedDate = job.posted_at ? new Date(job.apply_start_date).toLocaleDateString() : 'Unknown';
         const expiryDate = job.end_date ? new Date(job.end_date).toLocaleDateString() : 'Unknown';
 
         // Create the job card HTML
@@ -207,7 +99,7 @@ function displayJobs(jobs) {
             <div class="job-meta">
                 ${job.department ? `<span class="department">${escapeHtml(job.department)}</span>` : ''}
                 ${job.job_type ? `<span class="job-type">${escapeHtml(job.job_type)}</span>` : ''}
-                ${job.experience ? `<span class="experience">${escapeHtml(job.experience)}</span>` : ''}
+                ${job.require_experience ? `<span class="experience">${escapeHtml(job.require_experience)}</span>` : ''}
             </div>
 
             <div class="job-dates">
@@ -215,7 +107,7 @@ function displayJobs(jobs) {
                 <span class="expiry-date">Expires: ${expiryDate}</span>
             </div>
 
-            <p class="job-description">${truncateText(job.description || 'No description available.', 150)}</p>
+            <p class="job-description">${truncateText(job.job_description || 'No description available.', 500)}</p>
 
             <div class="job-actions">
                 <button class="view-details-btn" data-job-id="${job.id}">View Details</button>
@@ -256,8 +148,8 @@ function showJobDetails(job) {
     const jobDetails = document.getElementById('job-details');
 
     // Format dates
-    const postedDate = job.posted_at ? new Date(job.posted_at).toLocaleDateString() : 'Unknown';
-    const endDate = job.end_date ? new Date(job.end_date).toLocaleDateString() : 'Unknown';
+    const postedDate = job.apply_start_date ? new Date(job.apply_start_date).toLocaleDateString() : 'Unknown';
+    const endDate = job.apply_end_date ? new Date(job.apply_end_date).toLocaleDateString() : 'Unknown';
 
     // Construct the modal content
     jobDetails.innerHTML = `
@@ -273,7 +165,7 @@ function showJobDetails(job) {
                 <ul>
                     ${job.department ? `<li><strong>Department:</strong> ${escapeHtml(job.department)}</li>` : ''}
                     ${job.job_type ? `<li><strong>Job Type:</strong> ${escapeHtml(job.job_type)}</li>` : ''}
-                    ${job.experience ? `<li><strong>Experience Required:</strong> ${escapeHtml(job.experience)}</li>` : ''}
+                    ${job.job_description ? `<li><strong>Experience Required:</strong> ${escapeHtml(job.job_description)}</li>` : ''}
                 </ul>
             </div>
 
@@ -288,7 +180,7 @@ function showJobDetails(job) {
 
         <div class="job-description-section">
             <h4>Job Description</h4>
-            <p>${formatMultiLineText(job.description || 'No description available.')}</p>
+            <p>${formatMultiLineText(job.job_description || 'No description available.')}</p>
         </div>
 
         ${job.requirements ? `

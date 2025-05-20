@@ -129,4 +129,4 @@ export class Logger {
 }
 
 // 기본 인스턴스
-export const defaultLogger = new Logger({ logDir: './logs', logLevel:'event' });
+export const defaultLogger = new Logger({ logDir: './logs', logLevel:'debug' });

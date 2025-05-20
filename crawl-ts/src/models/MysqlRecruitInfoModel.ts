@@ -48,6 +48,8 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public requirements?: string;
   public preferred_qualifications?: string;
   public ideal_candidate?: string;
+
+
 }
 
 export class MysqlJobRegionSequelize extends Model {
@@ -60,6 +62,12 @@ export class MysqlFaviconSequelize extends Model {
   public id!: number;
   public domain!: string;
   public favicon!: string;
+}
+
+export class MysqlJobValidTypeSequelize extends Model {
+  public id!: number;
+  public job_id!: number;
+  public valid_type!: boolean;
 }
 
 
@@ -218,8 +226,33 @@ MysqlFaviconSequelize.init({
   timestamps: false,
 });
 
+MysqlJobValidTypeSequelize.init({
 
+  job_id: {
+    type: DataTypes.BIGINT,
+    allowNull: false,
+  },
+  valid_type: {
+    type: DataTypes.BIGINT,
+    allowNull: false,
+  }
+}, {
+  sequelize: mysqlRecruitInfoSequelize,
+  tableName: process.env.MYSQL_JOB_VALID_TYPE_TABLE,
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['job_id']
+    }
+  ]
+});
 
+MysqlRecruitInfoSequelize.hasOne(MysqlJobValidTypeSequelize, {
+  foreignKey: 'job_id', // MysqlJobValidTypeSequelize 테이블에 있는 외래 키
+  as: 'jobValidTypes',
+  onDelete: 'CASCADE',// 선택적: 관계에 대한 별칭
+});
 
 
 
