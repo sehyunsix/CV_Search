@@ -152,24 +152,7 @@ if (require.main === module) {
         logger.debug(`삭제한 URL 갯수: ${successCount} / ${datas.length}`);
       }
       )
-    //  const RecruitInfoUrls = await mysqlRecruitInfoRepository.getAllVaildRecruitInfoUrl();
-    // const results = await  Promise.all(RecruitInfoUrls.map((data) => {
-    //   return checkUrl(data.url)
-    //     .then((result) => {
-    //       console.log('result :', result)
-    //       return result
-    //     })
-    // }))
 
-
-    // const invalidUrls = results.filter((result) => result.success === false)
-    // const validUrls = results.filter((result) => result.success === true)
-
-    // console.log('vaildUrls :',validUrls.length)
-    // console.log('invalidUrls :', invalidUrls.length)
-    // const json = JSON.stringify(invalidUrls, null, 2);  // 보기 좋게 정렬 (indent: 2)
-    // fs.writeFileSync('invalidUrls.json', json, 'utf-8');
-    // console.log('invalidUrls.json 파일로 저장 완료')
 
 
   })();
