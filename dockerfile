@@ -37,11 +37,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 소스 코드 복사
-COPY . .
+COPY /crawl-ts /app
 
 # 패키지 설치
-WORKDIR /app/crawl
-
 RUN npm install
 
 # Chrome 실행 환경변수 설정

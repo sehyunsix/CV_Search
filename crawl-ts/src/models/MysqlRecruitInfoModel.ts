@@ -1,6 +1,5 @@
 import { Sequelize ,DataTypes ,Model} from 'sequelize'
 import { CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
-import { z } from 'zod';
 
 
 export const mysqlRecruitInfoSequelize = new Sequelize(

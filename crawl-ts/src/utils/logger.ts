@@ -128,5 +128,7 @@ export class Logger {
   }
 }
 
+const logLevelFromEnv = process.env.LOG_LEVEL as LogLevel || 'debug';
+
 // 기본 인스턴스
-export const defaultLogger = new Logger({ logDir: './logs', logLevel:'debug' });
+export const defaultLogger = new Logger({ logDir: './logs', logLevel: logLevelFromEnv});

@@ -1,5 +1,4 @@
 // models/recruitinfoModel.ts
-import { ICacheDbRecruitInfo } from '@models/RecruitInfoModel';
 import { Schema } from 'mongoose';
 import mongoose  from 'mongoose';
 
