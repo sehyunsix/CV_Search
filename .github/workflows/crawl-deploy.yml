@@ -25,16 +25,6 @@ jobs:
   build-and-push:
     name: 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
-      github.event_name == 'push' &&
-      (
-        contains(join(github.event.head_commit.modified, ','), 'crawl-ts/') ||
-        contains(join(github.event.head_commit.modified, ','), 'Dockerfile')
-      )
-
-
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v3
