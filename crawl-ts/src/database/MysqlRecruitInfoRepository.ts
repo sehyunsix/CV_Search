@@ -148,5 +148,38 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
     console.error(`❌ Job ${id} 삭제 실패`, error);
     throw error;
   }
+  }
+
+  /**
+ * 채용 정보 업데이트
+ * @param recruitInfo 업데이트할 채용 정보 객체
+ * @returns 업데이트된 채용 정보 객체 또는 null (업데이트 실패 시)
+ */
+  async deleteRecruitInfoByIdValidType(id: number, validType:number ,token : string ): Promise<void> {
+    try {
+      const response = await axios.delete(
+        `${process.env.SPRING_API_DOMAIN}/jobs/delete-one-job?jobId=${id}validType=${validType}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ 토큰 추가
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        console.log(`✅ Job ${id} 삭제 성공`);
+      } else {
+        console.warn(`⚠️ Job ${id} 삭제 응답 코드: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`❌ Job ${id} 삭제 실패`, error);
+      throw error;
+    }
+    }
+
+
 }
-}
+
+
+
+

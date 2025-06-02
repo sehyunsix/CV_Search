@@ -11,15 +11,6 @@ import * as fs from 'fs';
 
 
 const mysqlRecruitInfoRepository = new MysqlRecruitInfoRepository();
-const keywordsToDetectFailure = [
-  '공고가 마감되었습니다',
-  '존재하지 않는',
-  '페이지를 찾을 수 없습니다',
-  'This job is no longer available',
-  '채용이 마감',
-  '공고가 마감',
-  '채용이 종료',
-];
 
 
 
@@ -44,11 +35,9 @@ export async function checkUrl(url: string): Promise<{ url:string, status: numbe
       };
     }
     const isEmpty = !html || html.trim().length === 0;
-    const containsFailureKeyword = keywordsToDetectFailure.some(keyword =>
-      html.includes(keyword)
-    );
 
-    if (isEmpty || containsFailureKeyword) {
+
+    if (isEmpty ) {
       console.log(`[FAIL - ${isEmpty ? 'EMPTY' : 'KEYWORD'}] ${url}`);
       return {
         url,
@@ -137,7 +126,7 @@ if (require.main === module) {
         const tasks: Promise<boolean>[] = [];
         for (const data of datas) {
           tasks.push(
-            mysqlRecruitInfoRepository.deleteRecruitInfoById(data.id,token)
+            mysqlRecruitInfoRepository.deleteRecruitInfoByIdValidType(data.id, 1, token)
               .then(() => {
                 logger.debug(`삭제 성공: ${data.id} - ${data.url}`);
                 return true;
