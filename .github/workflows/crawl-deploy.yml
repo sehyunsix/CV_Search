@@ -94,5 +94,6 @@ jobs:
             docker-compose pull
             docker-compose down
             docker-compose up -d --remove-orphans
+            docker image prune -f
             docker-compose ps
             docker-compose logs --tail=100
