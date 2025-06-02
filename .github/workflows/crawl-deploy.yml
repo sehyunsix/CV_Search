@@ -4,7 +4,10 @@ run-name: Deploying to NCP in dev_typescript branch
 on:
   push:
     branches:
-      - main  # 메인 브랜치에 푸시될 때 실행
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       action:
@@ -22,6 +25,13 @@ jobs:
   build-and-push:
     name: 이미지 빌드 및 푸시
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'pull_request'
+    # crawl-ts 디렉토리 변경 시에만 실행
+    paths:
+      - 'crawl-ts/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v3
@@ -34,27 +44,24 @@ jobs:
 
       - name: 백엔드 Docker 이미지 빌드 및 푸시
         run: |
-          docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest
-
-      - name: 이미지 상태 확인
-        run: |
-          echo "백엔드 이미지: ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest"
 
   deploy:
     name: NCP 서버 배포
     runs-on: ubuntu-latest
-    needs : build-and-push
+    # build-and-push가 실행되지 않아도 계속 실행되도록 optional dependency 설정
+    needs: [build-and-push]
+    if: always()  # build-and-push가 skip 되어도 실행
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v3
+
       - name: 현재 디렉토리 파일 목록 확인
         run: ls -la
 
       - name: 환경 변수 적용 - docker-compose.yml 업데이트
-        run: |
-          cat docker-compose.yml
+        run: cat docker-compose.yml
 
       - name: CV_Search 디렉토리 생성 및 이동
         uses: appleboy/ssh-action@master
@@ -64,10 +71,8 @@ jobs:
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_PORT }}
           script: |
-            # 작업 디렉토리 생성 및 이동
             mkdir -p ~/CV_Search
             rm -f ~/CV_Search/docker-compose.yml
-            # Docker Hub 로그인
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: docker-compose 파일 전송 및 배포
@@ -81,7 +86,6 @@ jobs:
           target: "~/CV_Search/"
           overwrite: true
 
-
       - name: 배포 실행 및 확인
         uses: appleboy/ssh-action@master
         with:
@@ -90,10 +94,48 @@ jobs:
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_PORT }}
           script: |
+            set -e
             cd ~/CV_Search
+
+            echo "[1/6] 이미지 Pull"
             docker-compose pull crawl parser
+
+            echo "[2/6] 기존 컨테이너 중단 및 제거"
             docker-compose down crawl parser
-            docker-compose up crawl parser
+
+            echo "[3/6] 새로운 컨테이너 실행"
+            docker-compose up crawl parser -d
+
+            echo "[4/6] 불필요한 이미지 정리"
             docker image prune -f
+
+            echo "[5/6] 실행 상태 확인"
             docker-compose ps
-            docker-compose logs --tail=100
+
+            echo "[6/6] 서비스 상태 헬스체크 (최대 10초 대기)"
+
+            check_service_up() {
+              local service_name=$1
+              local max_attempts=10
+              local attempt=1
+              echo "🔍 Checking $service_name..."
+
+              while [ $attempt -le $max_attempts ]; do
+                if docker-compose ps | grep "$service_name" | grep -q "Up"; then
+                  echo "✅ $service_name is running (attempt $attempt)"
+                  return 0
+                fi
+                echo "⏳ $service_name not ready (attempt $attempt)..."
+                attempt=$((attempt + 1))
+                sleep 1
+              done
+
+              echo "❌ $service_name failed to start within $max_attempts seconds"
+              docker-compose logs $service_name
+              exit 1
+            }
+
+            check_service_up crawl
+            check_service_up parser
+
+            echo "🎉 모든 서비스가 정상 실행 중입니다!"
