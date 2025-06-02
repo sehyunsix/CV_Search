@@ -85,6 +85,8 @@ const geminiRegionCdScema = {
         },
         job_type: {
           type: SchemaType.STRING,
+          format: "enum",
+          enum: ['정규직', '계약직', '인턴', '아르바이트', '프리랜서', '파견직'],
           description: "고용 형태 (정규직, 계약직, 인턴, 아르바이트, 프리랜서, 파견직)",
           nullable: true
         },
@@ -164,7 +166,7 @@ function geminiRecruitInfoPrompt(content : string) {
      - region_id: region_text의 값을 대한민국 법정동 코드로 변환하세요 경기 안산시, 안산시 상록구 => [4127000000 ,4127100000]
      - require_experience: 요구되는 경력 수준 ("경력무관", "신입", "경력"). 가능하면 이 세 가지 카테고리로 매핑해주세요.
      - job_description: 주요 업무 내용이나 직무기술서에 대한 내용을 기술하세요.
-     - job_type: 고용 형태. 표준 용어를 사용하세요 (정규직, 계약직, 인턴, 아르바이트, 프리랜서, 파견직).만약 여러가지라면 /로 구분해서 작성해주세요(예 정규직/피견직)
+     - job_type: 고용 형태. 표준 용어를 사용하세요 (정규직, 계약직, 인턴, 아르바이트, 프리랜서, 파견직) 중 하나를 선택하세요.
        나와있지 않은 고용형태는 "무관"으로 설정하세요.
      - apply_start_date: 지원 시작일 또는 게시일 (가능한 YYYY-MM-DD 형식으로 맞추어주세요)
      - apply_end_date: 지원 마감일 (가능한 YYYY-MM-DD 형식으로 맞추어주세요)
@@ -449,6 +451,7 @@ export class GeminiParser implements IParser {
     return {
       ...rawContent,
       ...botRecruitInfo,
+      job_valid_type: 0,
       favicon: favicon?? undefined,
       created_at: now,
       updated_at: now,

@@ -105,6 +105,8 @@ export interface CreateDBRecruitInfoDTO extends BaseRecruitInfoDTO {
 
   title: string;
 
+  job_valid_type?: number;
+
   created_at?: Date;
 
   updated_at?: Date;
