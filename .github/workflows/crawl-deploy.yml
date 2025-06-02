@@ -30,7 +30,7 @@ jobs:
     paths:
       - 'crawl-ts/**'
       - 'Dockerfile'
-      - '.github/workflows/**'
+
 
     steps:
       - name: 코드 체크아웃
