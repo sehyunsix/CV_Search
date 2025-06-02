@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 소스 코드 복사
-COPY /crawl-ts /app
+COPY /crawl-ts .
 
 WORKDIR /app/crawl-ts
 # 패키지 설치
