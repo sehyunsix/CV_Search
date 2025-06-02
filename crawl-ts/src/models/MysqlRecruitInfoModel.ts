@@ -41,6 +41,10 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public region_text?: string;
   public require_experience?: string;
   public job_description?: string;
+
+  // 0: 기본 , 1: 채용 마감 , 2:  오류
+  public job_valid_type?: number;
+
   public job_type?: string;
   public apply_start_date?: Date;
   public apply_end_date?: Date;
@@ -128,7 +132,12 @@ MysqlRecruitInfoSequelize.init(
       },
       job_type: {
         type: DataTypes.STRING(100),
-      },
+    },
+    job_valid_type: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+       defaultValue: 0, // 기본값을 0으로 설정
+    },
       apply_start_date: {
         type: DataTypes.DATE,
         validate: {
