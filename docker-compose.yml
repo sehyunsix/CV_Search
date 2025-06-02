@@ -22,8 +22,6 @@ services:
       - redis
     env_file:
       - .deploy.env
-    volumes:
-      - .:/app
     working_dir: /app/crawl-ts
     command: ["npx", "ts-node", "src/scripts/runConcurrentCrawler.ts"]
     networks:

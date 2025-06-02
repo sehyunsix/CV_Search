@@ -91,9 +91,9 @@ jobs:
           port: ${{ secrets.NCP_PORT }}
           script: |
             cd ~/CV_Search
-            docker-compose pull
-            docker-compose down
-            docker-compose up -d --remove-orphans
+            docker-compose pull crawl parser
+            docker-compose down crawl parser
+            docker-compose up crawl parser
             docker image prune -f
             docker-compose ps
             docker-compose logs --tail=100
