@@ -4,7 +4,7 @@ run-name: Deploying to NCP in dev_typescript branch
 on:
   push:
     branches:
-      - dev_typescript  # 메인 브랜치에 푸시될 때 실행
+      - main  # 메인 브랜치에 푸시될 때 실행
     paths:
       - 'crawl-ts/**'  # crawl 디렉토리 내의 파일이 변경된 경우만 실행
       - 'docker-compose.yml'  # docker-compose.yml 파일이 변경된 경우만 실행
