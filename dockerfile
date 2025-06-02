@@ -42,7 +42,7 @@ COPY /crawl-ts /app
 WORKDIR /app/crawl-ts
 # 패키지 설치
 RUN npm install
-
+RUN npm install -g ts-node typescript
 # Chrome 실행 환경변수 설정
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
