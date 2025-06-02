@@ -39,6 +39,7 @@ WORKDIR /app
 # 소스 코드 복사
 COPY /crawl-ts /app
 
+WORKDIR /app/crawl-ts
 # 패키지 설치
 RUN npm install
 
