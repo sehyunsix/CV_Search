@@ -81,8 +81,8 @@ jobs:
           username: ${{ secrets.NCP_USERNAME }}
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_PORT }}
-          source: "docker-compose.yml"
-          target: "~/CV_Search/docker-compose.yml"
+          source: "./docker-compose.yml"
+          target: "~/CV_Search/"
 
 
       - name: 배포 실행 및 확인
