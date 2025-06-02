@@ -1,5 +1,5 @@
-name: Docker Compose Deploy to NCP
-run-name: Deploying to NCP
+name: Docker Compose Deploy to NCP in dev_typescript branch
+run-name: Deploying to NCP in dev_typescript branch
 
 on:
   push:
