@@ -4,9 +4,9 @@ run-name: Deploying to NCP
 on:
   push:
     branches:
-      - dev_crawl  # 메인 브랜치에 푸시될 때 실행
+      - dev_typescript  # 메인 브랜치에 푸시될 때 실행
     paths:
-      - 'crawl/**'  # crawl 디렉토리 내의 파일이 변경된 경우만 실행
+      - 'crawl-ts/**'  # crawl 디렉토리 내의 파일이 변경된 경우만 실행
       - 'docker-compose.yml'  # docker-compose.yml 파일이 변경된 경우만 실행
   workflow_dispatch:
     inputs:
@@ -38,8 +38,6 @@ jobs:
       - name: 백엔드 Docker 이미지 빌드 및 푸시
         run: |
           docker build \
-            --build-arg MONGODB_ADMIN_URI=${{ secrets.MONGO_DB_ADMIN_URI }} \
-            --build-arg MONGO_DB_NAME=${{ secrets.MONGO_DB_NAME }} \
             -t ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/crawl-server:latest
 
@@ -61,29 +59,7 @@ jobs:
         run: |
           cat docker-compose.yml
 
-      - name: 배포 파일 압축
-        run: |
-          # 배포에 필요한 파일만 포함
-          mkdir -p deploy
-          cp docker-compose.yml deploy/
-          cp deploy.sh deploy/
-          cp -r monitoring deploy/
-          chmod +x deploy/deploy.sh
-
-          # 압축
-          tar -czvf deploy.tar.gz -C deploy .
-
-      - name: 파일 전송 및 배포
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.NCP_HOST }}
-          username: ${{ secrets.NCP_USERNAME }}
-          password: ${{ secrets.NCP_PASSWORD }}
-          port: ${{ secrets.NCP_PORT }}
-          source: "deploy.tar.gz"
-          target: "~"
-
-      - name: 파일 압축 해제 및 배포 실행
+      - name: CV_Search 디렉토리 생성 및 이동
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.NCP_HOST }}
@@ -93,35 +69,23 @@ jobs:
           script: |
             # 작업 디렉토리 생성 및 이동
             mkdir -p ~/CV_Search
-            mkdir ~/CV_Search/logs
-            # 압축 파일 해제
-            tar -xzvf ~/deploy.tar.gz -C ~/CV_Search
+
 
             # Docker Hub 로그인
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-            # 배포 스크립트 실행
-            cd ~/CV_Search
-            chmod +x deploy.sh
+      - name: docker-compose 파일 전송 및 배포
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USERNAME }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          port: ${{ secrets.NCP_PORT }}
+          source: "docker-compose.yml"
+          target: "~/CV_Search/docker-compose.yml"
 
-            # GitHub Actions 입력에 따라 배포 스크립트 실행
-            ACTION="${{ github.event.inputs.action }}"
-            if [ "$ACTION" == "deploy" ]; then
-              ./deploy.sh start
-            elif [ "$ACTION" == "restart" ]; then
-              ./deploy.sh restart
-            elif [ "$ACTION" == "stop" ]; then
-              ./deploy.sh stop
-            elif [ "$ACTION" == "update" ]; then
-              ./deploy.sh update
-            else
-              ./deploy.sh start
-            fi
 
-            # 임시 파일 정리
-            rm -f ~/deploy.tar.gz
-
-      - name: 배포 상태 확인
+      - name: 배포 실행 및 확인
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.NCP_HOST }}
@@ -130,4 +94,7 @@ jobs:
           port: ${{ secrets.NCP_PORT }}
           script: |
             cd ~/CV_Search
-            ./deploy.sh status
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+            docker-compose ps
+            docker-compose logs --tail=100
