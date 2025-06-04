@@ -4,10 +4,7 @@ import axios from 'axios';
 import { writeFileSync } from 'fs';
 import { MysqlRecruitInfoRepository } from '../database/MysqlRecruitInfoRepository';
 import { getSpringAuthToken } from '../utils/key';
-const puppeteer = require('puppeteer');
-import { rejects } from 'assert';
-import { Dialog } from 'puppeteer';
-import * as fs from 'fs';
+import { MysqlRecruitInfoSequelize } from '../models/MysqlRecruitInfoModel';
 
 
 const mysqlRecruitInfoRepository = new MysqlRecruitInfoRepository();
@@ -119,14 +116,12 @@ async function getNotVaildUrls() : Promise<{ id: number; url: string }[]> {
 if (require.main === module) {
   (async () => {
     const token = await getSpringAuthToken()
-    await getNotVaildUrls()
+    await MysqlRecruitInfoSequelize.findAll({'attributes': ['id', 'url'], 'where': { job_valid_type: 2 }, raw: true })
       .then(async (datas) => {
         const deleteCount = datas.length;
         logger.debug(`삭제할 URL 갯수: ${deleteCount}`);
-        const tasks: Promise<boolean>[] = [];
         for (const data of datas) {
-          tasks.push(
-            mysqlRecruitInfoRepository.deleteRecruitInfoByIdValidType(data.id, 1, token)
+           await mysqlRecruitInfoRepository.deleteRecruitInfoByIdValidType(data.id, 2, token)
               .then(() => {
                 logger.debug(`삭제 성공: ${data.id} - ${data.url}`);
                 return true;
@@ -135,14 +130,9 @@ if (require.main === module) {
                 logger.debug(`삭제 실패: ${data.id} - ${data.url}`, error);
                 return false;
               })
-          );
         }
-        const successCount = (await Promise.all(tasks)).filter(r => r == true).length;
-        logger.debug(`삭제한 URL 갯수: ${successCount} / ${datas.length}`);
+        logger.debug(`삭제한 URL 갯수: ${datas.length}`);
       }
       )
-
-
-
   })();
 }

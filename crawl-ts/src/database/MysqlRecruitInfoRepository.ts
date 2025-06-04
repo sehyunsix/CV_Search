@@ -158,7 +158,7 @@ export class MysqlRecruitInfoRepository implements IRecruitInfoRepository {
   async deleteRecruitInfoByIdValidType(id: number, validType:number ,token : string ): Promise<void> {
     try {
       const response = await axios.delete(
-        `${process.env.SPRING_API_DOMAIN}/jobs/delete-one-job?jobId=${id}validType=${validType}`,
+        `${process.env.SPRING_API_DOMAIN}/admin/dashboard/delete-one-job-valid-type?jobId=${id}&validType=${validType}`,
         {
           headers: {
             Authorization: `Bearer ${token}`, // ✅ 토큰 추가
