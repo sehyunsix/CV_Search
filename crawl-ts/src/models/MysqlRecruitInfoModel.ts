@@ -1,6 +1,9 @@
 import { Sequelize ,DataTypes ,Model} from 'sequelize'
 import { CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
 
+export const VLAID_TYPE_EXPIRED = 2;
+export const VLAID_TYPE_ACTIVE =  1;
+export const VLAID_TYPE_DEFAULT = 0;
 
 export const mysqlRecruitInfoSequelize = new Sequelize(
     process.env.MYSQL_DATABASE ?? 'localhost',
@@ -36,6 +39,7 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public updated_at!: Date;
   public is_public!: boolean;
   public favicon?: string;
+  public favicon_id?: number; // 파비콘 ID 추가
   public company_name?: string;
   public department?: string;
   public region_text?: string;
@@ -113,6 +117,15 @@ MysqlRecruitInfoSequelize.init(
       },
       favicon: {
         type: DataTypes.TEXT,
+    },
+
+    favicon_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'MysqlFaviconSequelize', // 참조할 모델 이름
+          key: 'id', // 참조할 컬럼
+        },
       },
       company_name: {
         type: DataTypes.STRING(255),

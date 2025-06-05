@@ -115,6 +115,8 @@ export interface CreateDBRecruitInfoDTO extends BaseRecruitInfoDTO {
 
   favicon?: string;
 
+  favicon_id?: number; // 파비콘 ID 추가
+
 }
 /**
  * DB에 저장되는 채용 정보 인터페이스
