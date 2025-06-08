@@ -1,6 +1,6 @@
 import 'dotenv/config'; // 환경 변수 로딩
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { MysqlRecruitInfoSequelize, VLAID_TYPE_EXPIRED } from '../models/MysqlRecruitInfoModel';
+import { MysqlRecruitInfoSequelize, VALID_TYPE } from '../models/MysqlRecruitInfoModel';
 import pLimit from 'p-limit';
 
 // 입력 인터페이스
@@ -156,7 +156,7 @@ async function runExamples() {
               console.log(`\n--- URL: ${tc.url} 확인 시작 ---`);
               const result = await checkJobPostingExpiry(browser, tc.url, tc.text);
               if (result.status === '마감') {
-                  await MysqlRecruitInfoSequelize.update({ job_valid_type: VLAID_TYPE_EXPIRED }, {
+                  await MysqlRecruitInfoSequelize.update({ job_valid_type: VALID_TYPE.EXPIRED }, {
                         where: { url: tc.url }
                   })
               }

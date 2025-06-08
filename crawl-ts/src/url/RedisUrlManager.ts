@@ -353,7 +353,40 @@
     }
 
 
+    public async checkAllowedUrlPrefix(url: string): Promise<boolean> {
+      try {
+        const domain = this.extractDomain(url);
+        const allowedDomains =await this.redisClient.sMembers(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain));
+        return allowedDomains.some((prefix) => { return url.startsWith(prefix) });
+      } catch (error) {
+        logger.error(`URL 허용 여부 확인 중 오류 (${url}):`, error);
+        throw error;
+      }
+    }
 
+    /**
+     * 도메인에 대한 URL 링크 저장
+     * @param domain 도메인 이름
+     * @param urls URL 배열
+     */
+    public async saveUrlLinks(domain: string, urls: string[]): Promise<void> {
+      const multi = this.redisClient.multi();
+      try {
+        const allowedUrlPrefix = await this.redisClient.sMembers(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain));
+        urls.filter((url) => {
+          return allowedUrlPrefix.some((prefix) => url.startsWith(prefix));
+        })
+          .forEach((url) => {
+            multi.sAdd(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, URLSTAUS.NOT_VISITED), url);
+            multi.sAdd(RedisKey.URLSTATUS_KEY(URLSTAUS.NOT_VISITED), url);
+          });
+        await multi.exec();
+        logger.debug(`[RedisUrlManager] 도메인 ${domain}에 URL 링크 저장 완료: ${urls.length}개`);
+      } catch (error) {
+        logger.error(`[RedisUrlManager]  도메인 ${domain}에 URL 링크 저장 중 오류:`, error);
+        throw error;
+      }
+    }
 
     /**
      * 방문하지 않은 URL 추가하기
@@ -365,7 +398,7 @@
       try {
         const visited = await this.redisClient.sIsMember(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, URLSTAUS.VISITED), url);
         // logger.debug(`add URL ${urlOriginStatus}`);
-        if (!visited) {
+        if (visited===false) {
           const multi = this.redisClient.multi();
           logger.debug(`[RedisUrlManger] add URL ${url}`);
           // URL을 도메인 세트에 추가

@@ -145,22 +145,6 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
       )
   }
 
-  /**
-   * 방문한 URL 링크 레디스에 저장
-   * @param result 방문 결과
-   * @returns
-   */
-  async saveLinkUrls(result: SubUrl): Promise<boolean> {
-
-    return await Promise.all(result.crawledUrls.map((url) => {
-      this.urlManager.addUrl(url, result.domain, URLSTAUS.NOT_VISITED)
-    })).then(() => true)
-      .catch((error) => {
-        logger.error(`[Redis] 링크 URL 저장 중 오류 발생: ${error.message}`);
-        throw error;
-      }
-    )
-    }
 
 
   /**
@@ -221,13 +205,17 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
           continue;
         }
 
-        await this.saveLinkUrls(visitResult).then(() => {
+        // allowed_prefix_필터링
+        await this.urlManager.saveUrlLinks(visitResult.domain ,visitResult.crawledUrls).then(() => {
           logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
         });
 
-        await this.sendRawContent(visitResult).then(() => {
-          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
-        });
+        //url Manger allowed_prefix 사용
+        if (await this.urlManager.checkAllowedUrlPrefix(visitResult.url) === true) {
+          await this.sendRawContent(visitResult).then(() => {
+            logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+          });
+        }
 
       } catch (error) {
         if (error instanceof Error) {
