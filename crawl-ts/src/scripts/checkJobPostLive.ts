@@ -51,7 +51,10 @@ async function checkLiveUrl(url: string, browser: Browser): Promise<JobPostingAn
           // alert 발생 시 resolve 호출
         page.on('dialog', async (dialog) => {
           await dialog.dismiss();
-          if (dialog.message().includes('마감') || dialog.message().includes('아닙니다.') || dialog.message().includes('종료되었습니다.')){
+            if (dialog.message().includes('마감') ||
+                dialog.message().includes('아닙니다.') ||
+                dialog.message().includes('종료되었습니다.') ||
+                dialog.message().includes('만료')) {
             console.log(`[${url}] 페이지에서 알림창 발생: ${dialog.message()}`);
             if (page) await page.close();
             return resolve({

@@ -3,8 +3,8 @@ import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
 import puppeteer, { BrowserContext, Dialog ,Page, TimeoutError} from 'puppeteer';
-import { IUrlManager } from '../url/IUrlManager';
-import { URLSTAUS } from '../url/RedisUrlManager';
+import {RedisUrlManager } from '../url/RedisUrlManager';
+import { URLSTAUS } from '../models/ReidsModel';
 import { Producer } from '../message/Producer';
 import { IRawContent, RawContentSchema } from '../models/RawContentModel';
 import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserManager';
@@ -16,7 +16,7 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
   export class WebCrawler  {
     browserManager: ChromeBrowserManager;
     contentExtractor: IContentExtractor;
-    urlManager: IUrlManager;
+    urlManager: RedisUrlManager;
     rawContentProducer: Producer;
 
     /**
@@ -27,7 +27,7 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
       browserManager: ChromeBrowserManager;
       contentExtractor: IContentExtractor;
       rawContentProducer: Producer;
-      urlManager: IUrlManager;
+      urlManager: RedisUrlManager;
 
     }) {
       this.browserManager = options.browserManager;
@@ -205,7 +205,7 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
         const visitResult = await timeoutAfter(this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain ,context), 120_000, new TimeoutError('visitUrl 수집 시간 초과'))
           .catch((error) => {
             logger.error(`[Crawler][process] URL 방문 중 오류 발생: ${error.message}`);
-            this.urlManager.setURLStatus(nextUrlInfo.url, URLSTAUS.NOT_VISITED);
+            this.urlManager.setURLStatusByOldStatus(nextUrlInfo.url, URLSTAUS.VISITED ,URLSTAUS.NOT_VISITED);
             throw new Error("[Crawler][process] 큐 처리 중 오류 발생");
           });
 
@@ -217,7 +217,7 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
         const isSaveSuccess = await this.urlManager.saveTextHash(visitResult.text);
         if (isSaveSuccess===false) {
           logger.debug("[Crawler] 중복된 텍스트, 저장하지 않음.");
-          this.urlManager.setURLStatus(visitResult.url, URLSTAUS.NO_RECRUITINFO);
+          this.urlManager.setURLStatusByOldStatus(visitResult.url,URLSTAUS.VISITED , URLSTAUS.NO_RECRUITINFO);
           continue;
         }
 
