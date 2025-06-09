@@ -21,11 +21,7 @@ export const geminiRegionCdScema = {
       properties: {
         is_recruit_info: {
           type: SchemaType.BOOLEAN,
-          description: "분석된 텍스트가 채용공고인지 여부 (true=채용공고, false=채용공고 아님)",
-        },
-        is_it_recruit_info: {
-          type: SchemaType.BOOLEAN,
-          description: "분석된 텍스트가 IT 채용공고인지 여부 (true=IT채용공고, false=IT채용공고 아님)",
+          description: "분석된 텍스트가  IT 채용공고인지 여부 (true=채용공고, false=채용공고 아님)",
         },
         title: {
           type: SchemaType.STRING,
@@ -104,8 +100,9 @@ export const geminiRegionCdScema = {
           nullable: true
         }
       },
-      required: ["is_recruit_info" ,"is_it_recruit_info"]
+      required: ["is_recruit_info" ]
  } as Schema;
+
 
 export  const geminiRecruitInfoValidationSechma = {
   type: SchemaType.OBJECT,

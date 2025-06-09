@@ -2,7 +2,7 @@ import { WebCrawler } from '../crawler/WebCrawler';
 import { ConcurrentWebCrawler } from '../crawler/CocurrentCralwer';
 import { ChromeBrowserManager } from '../browser/ChromeBrowserManager';
 import { WebContentExtractor } from '../content/WebContentExtractor';
-import { RedisUrlManager, URLSTAUS } from '../url/RedisUrlManager';
+import { RedisUrlManager } from '../url/RedisUrlManager';
 import { defaultLogger as logger } from '../utils/logger';
 import { Producer } from '../message/Producer';
 import { QueueNames } from '../message/enums';

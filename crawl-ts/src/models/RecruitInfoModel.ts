@@ -75,11 +75,6 @@ export interface GeminiResponseResult  {
    */
   is_recruit_info: boolean;
 
-   /**
-   * IT 채용 공고인지 여부
-   */
-  is_it_recruit_info: boolean;
-
 }
 
 /**

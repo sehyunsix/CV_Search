@@ -77,7 +77,7 @@
           multi.sRem(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, oldStatus), url);
           multi.sRem(RedisKey.URLSTATUS_KEY(oldStatus), url);
         }
-        multi.sRem(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, newStatus), url);
+        multi.sAdd(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, newStatus), url);
         multi.sAdd(RedisKey.URLSTATUS_KEY(newStatus), url);
         await multi.exec();
 
@@ -146,7 +146,7 @@
     private extractDomain(url: string): string  {
       try {
         const urlObj = new URL(url);
-        return urlObj.origin
+        return urlObj.hostname;
       } catch (error) {
         logger.debug(`URL에서 도메인 추출 중 오류: ${url}`, error);
         throw new Error(`Invalid URL: ${url}`);
@@ -250,13 +250,24 @@
     * @returns URL과 도메인 정보가 포함된 객체 또는 URL이 없을 경우 null
     */
     async getNextUrlFromDomain(domain: string): Promise<{ url: string; domain: string } | null> {
-      const result = await this.redisClient.sPop(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, URLSTAUS.NOT_VISITED),1);
+      const result = await this.redisClient.sPop(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, URLSTAUS.NOT_VISITED), 1);
+
       try {
+        if (result.length === 0) {
+          const url = await this.redisClient.sRandMember(RedisKey.SEED_URL_KEY_BY_DOMAIN(domain));
+          if (!url) {
+            logger.debug(`[getNextUrlFromDomain] 도메인 ${domain}에 방문할 URL이 없습니다.`);
+            throw new Error(`[getNextUrlFromDomain] 도메인 ${domain}에 방문할 URL이 없습니다.`);
+          }
+          return {url ,domain};
+        }
 
         if (result.length > 0) {
-          this.setURLStatusByOldStatus(result[0],URLSTAUS.NOT_VISITED, URLSTAUS.VISITED)
+          await this.setURLStatusByOldStatus(result[0],URLSTAUS.NOT_VISITED, URLSTAUS.VISITED)
           return { url: result[0] as string, domain };
         }
+
+
         return null;
       } catch (error) {
         await this.redisClient.sAdd(RedisKey.URLSTATUS_KEY_BY_DOMAIN(domain, URLSTAUS.NOT_VISITED), result);
@@ -286,6 +297,7 @@
         this.currentDomainIndex = (this.currentDomainIndex + 1) % this.availableDomains.length;
 
         const result = await this.getNextUrlFromDomain(domain);
+
         if (result && await isUrlAllowedWithRobots(result.url, [domain]) === false) {
           logger.debug(`[getNextUrl] 사용할 수 없는 url 입니다. ${result?.url}`);
           // robots.txt에 의해 차단된 경우, 해당 URL을 visited 상태로 변경
@@ -293,6 +305,10 @@
           return null;
         }
 
+        if (result) {
+          await this.setURLStatusByOldStatus(result.url, URLSTAUS.NOT_VISITED, URLSTAUS.VISITED);
+
+        }
         return result;
       } catch (error) {
         const err = error as any;
@@ -342,6 +358,15 @@
         }
       }
 
+    async checkIsSeedUrl(domain :string , url : string ): Promise<boolean> {
+      try {
+        const seedUrls = await this.redisClient.sMembers(RedisKey.SEED_URL_KEY_BY_DOMAIN(domain));
+        return url in seedUrls;
+      } catch (error) {
+        logger.error('Seed URL 확인 중 오류:', error);
+        throw error;
+      }
+    }
 
     /**
      * 특정 상태의 랜덤 URL 가져오기
@@ -356,8 +381,11 @@
     public async checkAllowedUrlPrefix(url: string): Promise<boolean> {
       try {
         const domain = this.extractDomain(url);
-        const allowedDomains =await this.redisClient.sMembers(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain));
-        return allowedDomains.some((prefix) => { return url.startsWith(prefix) });
+
+        const allowedDomains = await this.redisClient.sMembers(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain));
+        logger.info(`도메인 ${domain}에 대한 허용된 URL 접두사:`, allowedDomains);
+        logger.info(`URL: ${url} 허용 여부 확인 중...`);
+        return allowedDomains.some((prefix) => { return url.startsWith(prefix) || url.includes(prefix) });
       } catch (error) {
         logger.error(`URL 허용 여부 확인 중 오류 (${url}):`, error);
         throw error;

@@ -2,7 +2,7 @@ import { IContentExtractor } from '../content/IContentExtractor';
 import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
-import puppeteer, { BrowserContext, Dialog ,Page, TimeoutError} from 'puppeteer';
+import  { BrowserContext, Dialog ,Page, TimeoutError} from 'puppeteer';
 import {RedisUrlManager } from '../url/RedisUrlManager';
 import { URLSTAUS } from '../models/ReidsModel';
 import { Producer } from '../message/Producer';
@@ -121,6 +121,10 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
           allowed_after_robots: subUrlResult.crawledUrls.length
         };
         subUrlResult.success = true;
+        logger.eventInfo(`[Crawler][visitUrl] URL 방문 성공: ${url} (${subUrlResult.crawlStats.total}개 링크)`);
+        subUrlResult.onclickUrls.forEach((url) => {
+          logger.debug(url);
+        })
         logger.eventInfo(`[Crawler][visitUrl] URL 방문 완료: ${url} (${subUrlResult.crawlStats.total}개 링크)`);
         return subUrlResult
       }).catch((error) => {
@@ -186,7 +190,7 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
         }
 
         const context = await this.browserManager.getBrowserContext(processNumber);
-        const visitResult = await timeoutAfter(this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain ,context), 120_000, new TimeoutError('visitUrl 수집 시간 초과'))
+        const visitResult = await timeoutAfter(this.visitUrl(nextUrlInfo.url, nextUrlInfo.domain ,context), 60_000, new TimeoutError('visitUrl 수집 시간 초과'))
           .catch((error) => {
             logger.error(`[Crawler][process] URL 방문 중 오류 발생: ${error.message}`);
             this.urlManager.setURLStatusByOldStatus(nextUrlInfo.url, URLSTAUS.VISITED ,URLSTAUS.NOT_VISITED);
@@ -199,7 +203,7 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
         }
 
         const isSaveSuccess = await this.urlManager.saveTextHash(visitResult.text);
-        if (isSaveSuccess===false) {
+        if (isSaveSuccess && await this.urlManager.checkIsSeedUrl(visitResult.domain, visitResult.url) === false) {
           logger.debug("[Crawler] 중복된 텍스트, 저장하지 않음.");
           this.urlManager.setURLStatusByOldStatus(visitResult.url,URLSTAUS.VISITED , URLSTAUS.NO_RECRUITINFO);
           continue;
@@ -207,13 +211,13 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
 
         // allowed_prefix_필터링
         await this.urlManager.saveUrlLinks(visitResult.domain ,visitResult.crawledUrls).then(() => {
-          logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+          logger.info(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
         });
 
         //url Manger allowed_prefix 사용
         if (await this.urlManager.checkAllowedUrlPrefix(visitResult.url) === true) {
           await this.sendRawContent(visitResult).then(() => {
-            logger.debug(`[Crawler] URL 방문 결과 저장 완료: ${visitResult.url}`)
+            logger.info(`[Crawler][RabbitMQ] URL 방문 전송 완료: ${visitResult.url}`)
           });
         }
 

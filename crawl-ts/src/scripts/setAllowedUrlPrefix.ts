@@ -70,7 +70,7 @@ async function setAllowedUrlPrefix() {
     const domains = await redisClient.sMembers('domains');
     for (const domain of domains) {
       console.log(`${domain}`);
-      await redisClient.sAdd(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain),'domain');
+      await redisClient.sAdd(RedisKey.ALLOWED_URL_PREFIX_KEY_BY_DOMAIN(domain), 'domain');
     }
 
   } catch (error) {
@@ -81,6 +81,7 @@ async function setAllowedUrlPrefix() {
     logger.info('Redis connection closed');
   }
 }
+
 (async () => {
   await redisClient.connect();
   const data = await readCsvFile('static/domains.csv');

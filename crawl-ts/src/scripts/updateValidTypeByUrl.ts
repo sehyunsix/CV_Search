@@ -1,4 +1,4 @@
-import { RedisClientType , createClient } from 'redis';
+import { createClient } from 'redis';
 import 'dotenv/config';
 import { defaultLogger as logger } from '../utils/logger';
 import { MysqlRecruitInfoSequelize, VALID_TYPE } from '../models/MysqlRecruitInfoModel';
@@ -30,18 +30,18 @@ async function updateValidTypeByUrl() {
         const isValid = allowedPrefixUrls.some(prefix => url.startsWith(prefix));
         if (isValid) {
           // Update the job_valid_type to 1 for valid URLs
-          await MysqlRecruitInfoSequelize.update(
-            { job_valid_type: VALID_TYPE.ACTIVE },
-            { where: { id: data.id } }
-          );
-          logger.info(`Updated job_valid_type to 1 for ID: ${data.id}, URL: ${url}`);
+          // await MysqlRecruitInfoSequelize.update(
+          //   { job_valid_type: VALID_TYPE.ACTIVE },
+          //   { where: { id: data.id } }
+          // );
+          logger.eventInfo(`Updated job_valid_type to 1 for ID: ${data.id}, URL: ${url}`);
         } else {
           // Update the job_valid_type to 0 for invalid URLs
           await MysqlRecruitInfoSequelize.update(
             { job_valid_type: VALID_TYPE.ERROR },
             { where: { id: data.id } }
           );
-          logger.info(`Updated job_valid_type to 3 for ID: ${data.id}, URL: ${url}`);
+          logger.eventInfo(`Updated job_valid_type to 3 for ID: ${data.id}, URL: ${url}`);
         }
 
       }
