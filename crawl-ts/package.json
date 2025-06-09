@@ -38,6 +38,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
     "@types/amqplib": "^0.10.7",
+    "@types/dockerode": "^3.3.40",
     "@types/ioredis": "^5.0.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",

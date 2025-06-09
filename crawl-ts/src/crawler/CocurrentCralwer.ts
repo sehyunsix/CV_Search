@@ -1,12 +1,14 @@
 import { WebCrawler } from './WebCrawler';
 import { defaultLogger as logger } from '../utils/logger';
+import { EventEmitter } from 'stream';
 
 
-export class ConcurrentWebCrawler {
+export class ConcurrentWebCrawler extends EventEmitter{
   private crawler: WebCrawler;
   private concurrency: number;
 
   constructor(crawler: WebCrawler, concurrency: number = 4) {
+    super();
     this.crawler = crawler;
     this.concurrency = concurrency;
   }

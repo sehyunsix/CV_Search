@@ -1,11 +1,8 @@
 import { Router } from 'express';
-
+import { getContainerList } from '../controller/CrawlController';
 const router = Router();
 
-router.get('/hello', (req, res) => {
-  res.json({ message: 'Hello from API!' });
-});
+router.get('/test', getContainerList);
 
-router.get('')
 
 export default router;
