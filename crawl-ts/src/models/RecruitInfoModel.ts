@@ -44,12 +44,12 @@ export interface BaseRecruitInfoDTO{
   /**
    * 지원 시작일
    */
-  apply_start_date?: Date;
+  apply_start_date?: Date | null;
 
   /**
    * 지원 마감일
    */
-  apply_end_date?: Date;
+  apply_end_date?: Date | null;
 
   /**
    * 필수 요건
@@ -110,7 +110,7 @@ export interface CreateDBRecruitInfoDTO extends BaseRecruitInfoDTO {
 
   favicon?: string;
 
-  favicon_id?: number; // 파비콘 ID 추가
+  favicon_id?: number | null; // 파비콘 ID 추가
 
 }
 /**

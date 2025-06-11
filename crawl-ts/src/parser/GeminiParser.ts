@@ -7,7 +7,6 @@ import { IRawContent } from '../models/RawContentModel';
 import { VisitResultModel } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { cd2RegionId, OTHER_REGION_ID, regionText2RegionIds } from '../trasnform/Transform';
-import { raw } from 'mysql2';
 
 
 

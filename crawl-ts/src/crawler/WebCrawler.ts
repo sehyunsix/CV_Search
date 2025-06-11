@@ -3,11 +3,12 @@ import { SubUrl } from '../models/VisitResult';
 import { defaultLogger as logger } from '../utils/logger';
 import { extractDomain } from '../url/urlUtils';
 import  { BrowserContext, Dialog ,Page, TimeoutError} from 'puppeteer';
-import {RedisUrlManager } from '../url/RedisUrlManager';
+import {redisUrlManager, RedisUrlManager } from '../url/RedisUrlManager';
 import { URLSTAUS } from '../models/ReidsModel';
-import { Producer } from '../message/Producer';
+import { producer, Producer } from '../message/Producer';
 import { IRawContent, RawContentSchema } from '../models/RawContentModel';
-import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserManager';
+import { chromeBrowserManager, ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserManager';
+import { webContentExtractor } from '../content/WebContentExtractor';
 
   /**
    * 웹 크롤러 구현체
@@ -18,6 +19,7 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
     contentExtractor: IContentExtractor;
     urlManager: RedisUrlManager;
     rawContentProducer: Producer;
+    running: boolean = true;
 
     /**
      * 웹 크롤러 생성자
@@ -47,7 +49,32 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
 
       await this.browserManager.initBrowser(10, 3000);
 
-      logger.debug('크롤러 초기화 완료');
+      this.running = true;
+
+      logger.info('크롤러 초기화 완료');
+    }
+
+
+    async stop(): Promise<void> {
+      try {
+        await this.browserManager.closeBrowser();
+      } catch (error) {
+        if (error instanceof Error) {
+          logger.error(`[Crawler][stop] 브라우저 종료 중 오류 발생: ${error.message}`);
+        }
+      }
+
+      try {
+        await this.rawContentProducer.close();
+      } catch (error) {
+        if (error instanceof Error) {
+          logger.error(`[Crawler][stop] 브라우저 종료 중 오류 발생: ${error.message}`);
+        }
+      }
+
+      logger.info('크롤러 정지 완료');
+
+      this.running = false;
     }
 
   /**
@@ -181,7 +208,7 @@ import { ChromeBrowserManager, timeoutAfter } from '../browser/ChromeBrowserMana
 
 
 async processQueue(processNumber : number, concurrency: number): Promise<void> {
-    while (true) {
+    while (this.running===true) {
       try {
         const nextUrlInfo = await this.urlManager.getNextUrl();
         if (!nextUrlInfo) {
@@ -232,6 +259,12 @@ async processQueue(processNumber : number, concurrency: number): Promise<void> {
     }
 }
 
+  }
 
+export const webCralwer = new WebCrawler({
 
-}
+  browserManager: chromeBrowserManager,
+  contentExtractor: webContentExtractor,
+  rawContentProducer: producer,
+  urlManager: redisUrlManager,
+});

@@ -306,3 +306,5 @@ async  collectOnclickScriptsWithScroll(page: Page): Promise<string[]> {
   return Array.from(collected);
 }
 }
+
+export const webContentExtractor = new WebContentExtractor();

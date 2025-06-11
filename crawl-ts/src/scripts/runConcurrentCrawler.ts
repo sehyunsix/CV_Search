@@ -33,11 +33,11 @@ async function runConcurrentCrawler() {
     const concurrencyLevel = parseInt(process.env.CONCURRENCY_LEVEL || '8');
 
     // 4. ConcurrentWebCrawler 인스턴스 생성
-    const concurrentCrawler = new ConcurrentWebCrawler(webCrawler, concurrencyLevel);
+    const concurrentCrawler = new ConcurrentWebCrawler(webCrawler);
 
     // 5. ConcurrentWebCrawler 실행
     logger.debug(`ConcurrentWebCrawler 실행 (동시성 수준: ${concurrencyLevel})`);
-    await concurrentCrawler.run();
+    await concurrentCrawler.run(concurrencyLevel);
 
     logger.debug('ConcurrentWebCrawler 실행 완료');
   } catch (error) {

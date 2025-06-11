@@ -53,8 +53,8 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public job_valid_type?: number;
 
   public job_type?: string;
-  public apply_start_date?: Date;
-  public apply_end_date?: Date;
+  public apply_start_date?: Date | null;
+  public apply_end_date?: Date | null;
   public requirements?: string;
   public preferred_qualifications?: string;
   public ideal_candidate?: string;
@@ -167,7 +167,8 @@ MysqlRecruitInfoSequelize.init(
           }
         }
       },
-      apply_end_date: {
+    apply_end_date: {
+        allowNull: true,
         type: DataTypes.DATE,
            validate: {
           isAfter: {

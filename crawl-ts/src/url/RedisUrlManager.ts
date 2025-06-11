@@ -66,6 +66,16 @@
         throw error;
       }
     }
+    async disconnect() {
+      try {
+        await this.redisClient.quit();
+        logger.debug('REDIS 연결 종료 성공');
+
+      } catch (error) {
+        logger.error('REDIS 종료 실패:', error);
+        throw error;
+      }
+    }
 
 
     async setURLStatusByOldStatus(url: string, oldStatus : URLSTAUS ,newStatus: URLSTAUS): Promise<void> {
@@ -456,4 +466,6 @@
       logger.info('오류 발생 후 다른 도메인에서 URL 가져오기 시도...');
       return this.getNextUrl();
     }
-  }
+}
+
+export const redisUrlManager = new RedisUrlManager();
