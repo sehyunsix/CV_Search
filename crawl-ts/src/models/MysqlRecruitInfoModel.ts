@@ -1,7 +1,13 @@
 import { Sequelize ,DataTypes ,Model} from 'sequelize'
 import { CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
 
+export enum VALID_TYPE {
+  ERROR = 3,
+  EXPIRED = 2,
+  ACTIVE = 1,
+  DEFAULT = 0
 
+};
 export const mysqlRecruitInfoSequelize = new Sequelize(
     process.env.MYSQL_DATABASE ?? 'localhost',
     process.env.MYSQL_USER ?? 'root' ,
@@ -36,6 +42,7 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public updated_at!: Date;
   public is_public!: boolean;
   public favicon?: string;
+  public favicon_id?: number; // 파비콘 ID 추가
   public company_name?: string;
   public department?: string;
   public region_text?: string;
@@ -46,8 +53,8 @@ export class MysqlRecruitInfoSequelize extends Model<CreateDBRecruitInfoDTO, Cre
   public job_valid_type?: number;
 
   public job_type?: string;
-  public apply_start_date?: Date;
-  public apply_end_date?: Date;
+  public apply_start_date?: Date | null;
+  public apply_end_date?: Date | null;
   public requirements?: string;
   public preferred_qualifications?: string;
   public ideal_candidate?: string;
@@ -113,6 +120,15 @@ MysqlRecruitInfoSequelize.init(
       },
       favicon: {
         type: DataTypes.TEXT,
+    },
+
+    favicon_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'MysqlFaviconSequelize', // 참조할 모델 이름
+          key: 'id', // 참조할 컬럼
+        },
       },
       company_name: {
         type: DataTypes.STRING(255),
@@ -151,7 +167,8 @@ MysqlRecruitInfoSequelize.init(
           }
         }
       },
-      apply_end_date: {
+    apply_end_date: {
+        allowNull: true,
         type: DataTypes.DATE,
            validate: {
           isAfter: {

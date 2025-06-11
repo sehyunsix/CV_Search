@@ -1,7 +1,8 @@
 import 'dotenv/config';
-import { Logger, defaultLogger as logger } from '../../src/utils/logger';
-import { MysqlFaviconSequelize } from '../models/MysqlRecruitInfoModel';
+import {   defaultLogger as logger } from '../../src/utils/logger';
+import { MysqlFaviconSequelize, MysqlRecruitInfoSequelize } from '../models/MysqlRecruitInfoModel';
 import { RedisUrlManager } from '../url/RedisUrlManager';
+import { Op } from 'sequelize';
 
 async function main() {
 
@@ -12,12 +13,26 @@ async function main() {
   for (const data of faviconList) {
     try {
       const result = await MysqlFaviconSequelize.upsert({ domain: data.domain, logo: data.logo }, { returning: true });
+      logger.debug('[MysqlRecruitInfoRepository][createRecruitInfo] 파비콘 저장 성공:', result[0].id);
       logger.debug('[MysqlRecruitInfoRepository][createRecruitInfo] 파비콘 저장 성공:', data.domain);
     } catch (error) {
       logger.error(`Error checking URL in MySQL: ${data.domain}`, error);
     }
   }
 
+  const favicon_ids = await MysqlFaviconSequelize.findAll({
+    attributes: ['id', 'domain', 'logo'],
+    raw: true,
+  });
+
+  for (const favicon of favicon_ids) {
+        await MysqlRecruitInfoSequelize.update({favicon_id : favicon.id}, {where :{ url: {
+          [Op.like]: `%${favicon.domain}%`
+        }
+        }
+        })
+    logger.debug('[MysqlRecruitInfoRepository][createRecruitInfo] 파비콘 ID 업데이트 성공:', favicon.id);
+  }
 
 }
 
