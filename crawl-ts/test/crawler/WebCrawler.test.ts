@@ -3,7 +3,6 @@ import express from 'express';
 import * as http from 'http';
 import path from 'path';
 import { WebCrawler } from '../../src/crawler/WebCrawler';
-import { IUrlManager } from '../../src/url/IUrlManager';
 import { IContentExtractor } from '../../src/content';
 import { Producer } from '@message/Producer';
 import { ChromeBrowserManager } from '@browser/ChromeBrowserManager';
