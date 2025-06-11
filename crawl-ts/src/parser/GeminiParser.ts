@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import {GoogleGenerativeAI,} from '@google/generative-ai';
 import { GeminiResponseRecruitInfoDTO, CreateDBRecruitInfoDTO } from '../models/RecruitInfoModel';
-import { geminiRecruitInfoPrompt, geminiRegionTextPrompt, geminiRecruitInfoValidationPrompt ,geminiJobEndDatePrompt} from './Prompt';
+import { geminiRecruitInfoPrompt, geminiRegionTextPrompt, geminiRecruitInfoValidationPrompt ,geminiJobEndDatePrompt} from './prompt';
 import { geminiRecruitInfoSechma, geminiRegionCdScema ,geminiRecruitInfoValidationSechma ,geminiJobEndDateSchema} from './Schema';
 import { IRawContent } from '../models/RawContentModel';
 import { VisitResultModel } from '../models/VisitResult';

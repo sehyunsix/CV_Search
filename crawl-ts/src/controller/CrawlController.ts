@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { concurrentWebCrawler } from '../crawler/CocurrentCralwer';
-
+import { defaultLogger as logger } from '../utils/logger';
 
 
 
@@ -40,9 +40,13 @@ export async function startCrawler (req: Request, res: Response): Promise<void> 
   try {
     // 크롤링 시작 로직을 여기에 추가합니다.
     const { concurrency } = req.body;
-    concurrentWebCrawler.emit('start', concurrency); // 예시로 동시성 10으로 시작
-
-    res.status(200).json({ message: 'Crawl started successfully' });
+    if (concurrentWebCrawler.getStatus() === false) {
+      concurrentWebCrawler.emit('start', concurrency); // 예시로 동시성 10으로 시작
+      res.status(200).json({ message: 'Crawl started successfully' });
+    }
+    else {
+      res.status(400).json({ error: 'Crawl is already running' });
+    }
   } catch (error) {
     console.error('Error starting crawl:', error);
     res.status(500).json({ error: 'Failed to start crawl' });
@@ -74,6 +78,10 @@ export async function startCrawler (req: Request, res: Response): Promise<void> 
  */
 export async function stopCrawler (req: Request, res: Response): Promise<void>  {
   try {
+    if (concurrentWebCrawler.getStatus() === false) {
+      res.status(400).json({ error: 'Crawl is not running' });
+      return;
+    }
     // 크롤링 시작 로직을 여기에 추가합니다.
     concurrentWebCrawler.emit('stop'); // 예시로 동시성 10으로 시작
     res.status(200).json({ message: 'Crawl stopped successfully' });

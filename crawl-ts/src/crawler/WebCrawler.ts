@@ -19,7 +19,7 @@ import { webContentExtractor } from '../content/WebContentExtractor';
     contentExtractor: IContentExtractor;
     urlManager: RedisUrlManager;
     rawContentProducer: Producer;
-    running: boolean = true;
+    running: boolean = false;
 
     /**
      * 웹 크롤러 생성자

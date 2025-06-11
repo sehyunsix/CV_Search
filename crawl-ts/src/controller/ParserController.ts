@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { JobPipeLine } from '../pipeline/JobPipeLine';
-
+import { defaultLogger as logger } from '../utils/logger';
 const jobPipeLine = new JobPipeLine();
-let isParserRunning = false; // 파서 상태를 나타내는 변수
 
 /**
  * @swagger
@@ -36,8 +35,12 @@ let isParserRunning = false; // 파서 상태를 나타내는 변수
  */
 export async function startJobPipeLine(req: Request, res: Response): Promise<void> {
   try {
+    if (jobPipeLine.getStatus()===true) {
+      console.log('Parser is already running');
+      res.status(400).json({ error: 'Parser is already running' });
+      return;
+    }
     await jobPipeLine.run();
-    isParserRunning = true; // Update status
     res.status(200).json({ message: 'Parser started successfully' });
   } catch (error) {
     console.error('Error starting parser:', error);
@@ -77,10 +80,15 @@ export async function startJobPipeLine(req: Request, res: Response): Promise<voi
  */
 export async function stopJobPipeLine(req: Request, res: Response): Promise<void> {
   try {
+    if (jobPipeLine.getStatus() === false) {
+     logger.info('[ParserController] Parser is not running');
+      res.status(400).json({ error: 'Parser is not running' });
+      return;
+    }
     await jobPipeLine.stop();
     res.status(200).json({ message: 'Parser stopped successfully' });
   } catch (error) {
-    console.error('Error stopping parser:', error);
+   logger.error('Error stopping parser:', error);
     res.status(500).json({ error: 'Failed to stop parser' });
   }
 }
@@ -109,7 +117,7 @@ export async function getParserStatus(req: Request, res: Response): Promise<void
   try {
     res.status(200).json({ status: jobPipeLine.getStatus() ? 'running' : 'stopped' });
   } catch (error) {
-    console.error('Error fetching parser status:', error);
+    logger.error('[ParserController] Error fetching parser status:', error);
     res.status(500).json({ error: 'Failed to fetch parser status' });
   }
 }

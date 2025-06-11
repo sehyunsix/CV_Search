@@ -54,6 +54,10 @@
      */
     async connect() {
       try {
+        if (this.redisClient.isOpen) {
+          logger.debug('REDIS 클라이언트가 이미 연결되어 있습니다.');
+          return;
+        }
         await this.redisClient.connect();
         const pong = await this.redisClient.ping();  // 연결 확인
         if (pong === 'PONG') {
