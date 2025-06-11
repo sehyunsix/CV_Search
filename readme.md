@@ -29,6 +29,7 @@ crawl-ts/
 - Redis
 - RabbitMQ
 - Jest (테스트)
+- Docker / Docker Compose
 
 ## 주요 기능
 
@@ -37,6 +38,7 @@ crawl-ts/
 - 다양한 데이터베이스 지원 (MongoDB, MySQL)
 - 메시지 큐를 통한 비동기 처리
 - API 서버를 통한 데이터 제공
+- Redis를 활용한 데이터 캐싱 및 상태 관리
 
 ## 설계 패턴
 
@@ -127,6 +129,36 @@ npm run build
 
 # 프로덕션 모드 실행
 npm start
+```
+
+### Docker 사용
+
+#### Docker 이미지 빌드
+
+```bash
+docker build -t sehyunsix/crawl-server:latest . \
+&& docker push sehyunsix/crawl-server:latest.
+docker image prune -f
+```
+
+#### Docker 컨테이너 실행
+
+```bash
+docker run -d -p 8080:8080 --env-file .env --name crawl-ts-container crawl-ts
+```
+
+#### Docker Compose 사용
+
+`docker-compose.yml` 파일이 설정되어 있다면 다음 명령어로 실행할 수 있습니다:
+
+```bash
+docker-compose up -d
+```
+
+컨테이너를 중지하려면:
+
+```bash
+docker-compose down
 ```
 
 ### 테스트

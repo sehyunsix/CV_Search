@@ -91,13 +91,13 @@ jobs:
             cd ~/CV_Search
 
             echo "[1/6] 이미지 Pull"
-            docker-compose pull crawl parser
+            docker-compose pull crawl
 
-            echo "[2/6] 기존 컨테이너 중단 및 제거"
-            docker-compose down crawl parser
+            echo "[2/6] 기존 컨테이너 중단 및 제거
+            docker-compose down crawl
 
             echo "[3/6] 새로운 컨테이너 실행"
-            docker-compose up crawl parser -d
+            docker-compose up -d
 
             echo "[4/6] 불필요한 이미지 정리"
             docker image prune -f
@@ -129,6 +129,7 @@ jobs:
             }
 
             check_service_up crawl
-            check_service_up parser
+            check_service_up redis
+            check_service_up rabbitmq
 
             echo "🎉 모든 서비스가 정상 실행 중입니다!"

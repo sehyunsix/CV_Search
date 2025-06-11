@@ -1,29 +1,17 @@
 services:
-  parser:
-    build:
-      context: .
-      dockerfile: dockerfile
-    image: sehyunsix/crawl-server:latest
-    container_name: parser-app
-    depends_on:
-      - rabbitmq
-      - redis
-    env_file:
-      - .deploy.env
-    working_dir: /app/crawl-ts
-    command: ["npx", "ts-node", "src/scripts/runGeminiParserConsumer.ts"]
-    networks:
-      - crawl-network
+
   crawl:
     image: sehyunsix/crawl-server:latest
     container_name: crawl-app
+    ports:
+      - "8000:8000"         # HTTP
     depends_on:
       - rabbitmq
       - redis
     env_file:
       - .deploy.env
     working_dir: /app/crawl-ts
-    command: ["npx", "ts-node", "src/scripts/runConcurrentCrawler.ts"]
+    command: ["npx", "ts-node", "src/index.ts"]
     networks:
       - crawl-network
 
