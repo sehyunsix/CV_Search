@@ -93,7 +93,7 @@ jobs:
             echo "[1/6] 이미지 Pull"
             docker-compose pull crawl
 
-            echo "[2/6] 기존 컨테이너 중단 및 제거
+            echo "[2/6] 기존 컨테이너 중단 및 제거"
             docker-compose down crawl
 
             echo "[3/6] 새로운 컨테이너 실행"
