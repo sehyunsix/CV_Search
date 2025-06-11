@@ -29,6 +29,10 @@ export class ConcurrentWebCrawler extends EventEmitter{
 
   }
 
+  getStatus(): boolean{
+    return this.crawler.running;
+  }
+
   async stop(): Promise<void> {
     try {
       await this.crawler.stop();

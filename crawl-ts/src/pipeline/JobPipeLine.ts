@@ -12,17 +12,21 @@ export class JobPipeLine  {
   private consumer: Consumer;
   private urlManager: RedisUrlManager;
   private recruitInfoRepository: RecruitInfoRepository;
+
+  private running: boolean = false;
   constructor() {
     this.parser = new GeminiParser();
     this.consumer = new Consumer(QueueNames.VISIT_RESULTS);
     this.urlManager = redisUrlManager;
     this.recruitInfoRepository = new RecruitInfoRepository();
+    this.running = false;
   }
 
   async run(): Promise<void> {
     try {
       await this.consumer.connect();
       logger.info('JobPipeLine 연결 성공');
+      this.running = true;
       await this.consumer.handleLiveMessage(
           async (msg) => {
             if (msg) {
@@ -74,10 +78,15 @@ export class JobPipeLine  {
   }
 
   async stop(): Promise<void> {
+    this.running = false
     await this.consumer.close();
     // 여기에 파이프라인 중지 로직을 추가합니다.
     // 예시로, 데이터베이스 연결 해제, 크롤러 중지 등을 수행할 수 있습니다.
     console.log('JobPipeLine 중지 중...');
+  }
+
+  getStatus(): boolean {
+    return this.running;
   }
 
 
