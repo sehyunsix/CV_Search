@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { concurrentWebCrawler } from '../crawler/CocurrentCralwer';
 
 
+
+
 /**
  * @swagger
  * /api/crawl/start:
@@ -39,6 +41,7 @@ export async function startCrawler (req: Request, res: Response): Promise<void> 
     // 크롤링 시작 로직을 여기에 추가합니다.
     const { concurrency } = req.body;
     concurrentWebCrawler.emit('start', concurrency); // 예시로 동시성 10으로 시작
+
     res.status(200).json({ message: 'Crawl started successfully' });
   } catch (error) {
     console.error('Error starting crawl:', error);
@@ -73,9 +76,39 @@ export async function stopCrawler (req: Request, res: Response): Promise<void>  
   try {
     // 크롤링 시작 로직을 여기에 추가합니다.
     concurrentWebCrawler.emit('stop'); // 예시로 동시성 10으로 시작
-    res.status(200).json({ message: 'Crawl stoped successfully' });
+    res.status(200).json({ message: 'Crawl stopped successfully' });
   } catch (error) {
-    console.error('Error starting crawl:', error);
-    res.status(500).json({ error: 'Failed to start crawl' });
+    console.error('Error stopping crawl:', error);
+    res.status(500).json({ error: 'Failed to stop crawl' });
+  }
+}
+
+
+/**
+ * @swagger
+ * /api/crawl/status:
+ *   get:
+ *     summary: Get the status of the web crawler
+ *     description: Returns the current status of the web crawler (running or stopped).
+ *     tags:
+ *       - Crawler
+ *     responses:
+ *       200:
+ *         description: Current status of the web crawler
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: running
+ */
+export async function getCrawlerStatus(req: Request, res: Response): Promise<void> {
+  try {
+    res.status(200).json({ status: concurrentWebCrawler.getStatus() ? 'running' : 'stopped' });
+  } catch (error) {
+    console.error('Error fetching crawler status:', error);
+    res.status(500).json({ error: 'Failed to fetch crawler status' });
   }
 }
